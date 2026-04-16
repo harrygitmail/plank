@@ -129,42 +129,63 @@ found_it:
 
 enum plank_status get_host_uuid(char **ret)
 {
+	enum plank_status f_ret;
 	struct libmnt_table *tb = mnt_new_table();
-	struct libmnt_fs *fs;
+	struct libmnt_fs *fs = NULL;
+	blkid_probe pr = NULL;
 
-	int c = mnt_table_parse_mtab(tb, NULL);
+	f_ret = mnt_table_parse_mtab(tb, NULL);
 
-	if(c < 0) return plank_err;
+	if(f_ret < 0) goto out;
 
 	const char *target_mountpoint = "/";
 
 	fs = mnt_table_find_target(tb, target_mountpoint, MNT_ITER_BACKWARD);
 
-	if( fs == NULL) return plank_err;
+	if( fs == NULL) {
+		f_ret = plank_err;
+		goto out;
+	}
 
 	const char *devname = mnt_fs_get_srcpath(fs);
 
-	if(devname == NULL) return plank_err;
+	if(devname == NULL) {
+		f_ret = plank_err;
+		goto out;
+	}
 
-	blkid_probe pr = blkid_new_probe_from_filename(devname);
+	pr = blkid_new_probe_from_filename(devname);
 
-	if(pr == NULL) return plank_err;
+	if(pr == NULL) {
+		f_ret = plank_err;
+		goto out;
+	}
 
-	c = blkid_do_safeprobe(pr);
+	f_ret = blkid_do_safeprobe(pr);
 
-	if(c != 0) return plank_err;
+	if(f_ret != 0) {
+		f_ret = plank_err;
+		goto out;
+	}
 
 	const char *target_uuid = NULL;
 
-	c = blkid_probe_lookup_value(pr, "UUID", &target_uuid, NULL);
+	f_ret = blkid_probe_lookup_value(pr, "UUID", &target_uuid, NULL);
 
-	if(c == -1) return plank_err;
+	if(f_ret == -1) {
+		f_ret = plank_err;
+		goto out;
+	}
 
 	*ret = malloc((strlen(target_uuid) + 1));
 
 	strcpy(*ret, target_uuid);
 
-	return plank_OK;
+out:
+	mnt_unref_table(tb);
+	blkid_free_probe(pr);
+
+	return f_ret;
 }
 
 enum plank_status get_boot_path(char **ret)

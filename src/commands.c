@@ -114,6 +114,7 @@ int make_entry(int argc, char **argv)
 
 	enum plank_status ret;
 	int tar_subvol_fd;
+	size_t len;
 	tar_subvol_fd = open("/", O_RDONLY);
 
 	if( tar_subvol_fd == -1 ) {
@@ -191,42 +192,43 @@ int make_entry(int argc, char **argv)
 			char *options = NULL;
 			char *version = NULL;
 
-			int ret;
-
-			ret = asprintf(&filename, "snapshot-%s-%s-%ld.conf",
+			len = asprintf(&filename, "snapshot-%s-%s-%ld.conf",
 					entry_token, 
 					host[y].kernel_ver, 
 					tar_subvol[i].snapshot_time.tv_sec);
 
-			ret = asprintf(&title, "snapshot %s %s %s",
+			len = asprintf(&title, "snapshot %s %s %s",
 					pretty_name,
 					date_time,
 					host[y].kernel_ver);
 
-			ret = asprintf(&sort_key, "%s-%s",
+			len = asprintf(&sort_key, "%s-%s",
 					id,
 					host[y].kernel_ver);
 
-			ret = asprintf(&path_to_kernel, "/%s/%s/linux",
+			len = asprintf(&path_to_kernel, "/%s/%s/linux",
 					entry_token,
 					host[y].kernel_ver);
 
-			ret = asprintf(&path_to_initrd, "/%s/%s/initrd",
+			len = asprintf(&path_to_initrd, "/%s/%s/initrd",
 					entry_token,
 					host[y].kernel_ver);
 
-			ret = asprintf(&options, "root=UUID=%s rw rootflags=subvolid=%" PRIu64 
+			len = asprintf(&options, "root=UUID=%s rw rootflags=subvolid=%" PRIu64 
 					" loglevel=3 quiet systemd.machine_id=%s",
 					host_uuid, 
 					tar_subvol[i].snapshot_id,
 					entry_token);
 			
-			ret = asprintf(&version, "%s",
+			len = asprintf(&version, "%s",
 					host[y].kernel_ver);
 
 
 
-			if(ret == -1) goto clean_up_temp_fel;
+			if(len == -1) {
+				ret = plank_err;
+				goto clean_up_temp_fel;
+			}
 
 			char *f_filename = NULL;
 			char *f_title = NULL;
@@ -237,28 +239,28 @@ int make_entry(int argc, char **argv)
 			char *f_initrd = NULL;
 			char *f_options = NULL;
 
-			ret = asprintf(&f_filename, "%s",
+			len = asprintf(&f_filename, "%s",
 					filename);
 
-			ret = asprintf(&f_title,"title      %s",
+			len = asprintf(&f_title,"title      %s",
 					title);
 			
-			ret = asprintf(&f_version, "version    %s",
+			len = asprintf(&f_version, "version    %s",
 					version);
 
-			ret = asprintf(&f_machine_id, "machine-id %s",
+			len = asprintf(&f_machine_id, "machine-id %s",
 					entry_token);
 
-			ret = asprintf(&f_sort_key, "sort-key   %s",
+			len = asprintf(&f_sort_key, "sort-key   %s",
 					sort_key);
 
-			ret = asprintf(&f_linux, "linux      %s",
+			len = asprintf(&f_linux, "linux      %s",
 					path_to_kernel);
 
-			ret = asprintf(&f_initrd, "initrd     %s",
+			len = asprintf(&f_initrd, "initrd     %s",
 					path_to_initrd);
 
-			ret = asprintf(&f_options, "options    %s",
+			len = asprintf(&f_options, "options    %s",
 					options);
 
 clean_up_temp_fel:
@@ -270,7 +272,10 @@ clean_up_temp_fel:
 			free(options);
 			free(version);
 
-			if(ret == -1) continue;
+			if(len == -1) {
+				ret = plank_err;
+				continue;
+			}
 
 			host_loader[n].filename = f_filename;
 			host_loader[n].title = f_title;
@@ -294,7 +299,7 @@ clean_up_temp_fel:
 
 		char *path_to_file = NULL;
 
-		ret = asprintf(&path_to_file, "%s/loader/entries/%s",
+		len = asprintf(&path_to_file, "%s/loader/entries/%s",
 				boot_path,
 				host_loader[p].filename);
 
