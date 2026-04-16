@@ -1,0 +1,4 @@
+/#*
+*.o
+/src/build/
+/src/.cache/
