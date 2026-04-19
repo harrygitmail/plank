@@ -29,6 +29,7 @@ enum plank_status {
 	plank_btrfs_util_err_NOT_BTRFS,
 	plank_btrfs_util_err_NOT_SUBVOLUME,
 	plank_err,
+	plank_mem_err,
 	plank_boot_not_found,
 };
 

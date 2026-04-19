@@ -16,3 +16,5 @@ int make_entry(int argc, char **argv);
 
 
 int clean(int argc, char **argv);
+
+int list_entry(int argc, char **argv);

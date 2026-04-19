@@ -13,6 +13,7 @@ command commands[] = {
 	{"show-host-info", show_host_info},
 	{"make-entry", make_entry},
 	{"clean", clean},
+	{"list-entry", list_entry},
 	{NULL,NULL}
 };
 

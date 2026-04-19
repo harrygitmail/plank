@@ -113,8 +113,10 @@ int make_entry(int argc, char **argv)
 	
 
 	enum plank_status ret;
+
+	int len;
+
 	int tar_subvol_fd;
-	size_t len;
 	tar_subvol_fd = open("/", O_RDONLY);
 
 	if( tar_subvol_fd == -1 ) {
@@ -149,6 +151,10 @@ int make_entry(int argc, char **argv)
 	ret = get_host_uuid(&host_uuid);
 
 	if(ret == plank_err) goto out;
+
+	/* lets use default values if parsing os-release gives
+	 * any error.
+	 */
 
 	ret = get_value_by_key(&pretty_name, "PRETTY_NAME");
 	if(ret == plank_err) pretty_name = strdup("Linux");
@@ -303,7 +309,7 @@ clean_up_temp_fel:
 				boot_path,
 				host_loader[p].filename);
 
-		if(ret == -1) goto write_out;
+		if(len == -1) goto write_out;
 
 	
 		FILE *file = fopen(path_to_file, "w");
@@ -394,7 +400,7 @@ out:
 	return ret;
 }
 
-int clean(int argc, char **argv) {
+int clean(int argc , char **argv) {
 	enum plank_status ret;
 	int len;
 	int tar_subvol_fd;
@@ -537,4 +543,50 @@ out:
 	free(entry_token);
 	free(boot_path);
 	return ret;
+}
+
+int list_entry(int argc, char **argv)
+{
+	int status;
+	FILE *file = NULL;
+	char **lines = NULL;
+
+	if(argc < 2) {
+		printf("please provide path to file\n");
+		status = 1;
+		goto exit;
+	}
+
+	char *target = argv[1];
+
+	file = fopen(target, "r");
+
+	if(file == NULL) {
+		perror("failed to open file \n");
+		return 2;
+	}
+
+	
+	lines = read_conf_file(file);
+
+	if(lines == NULL) {
+		printf("failed to parse given loader config file");
+		status = 3;
+		goto exit;
+	}
+
+
+	status = 0;
+
+exit:
+	if(file != NULL) fclose(file);
+
+	for(int i = 0; lines[i] != NULL; i++) {
+		printf("%s\n", lines[i]);
+		free(lines[i]);
+	}
+
+	free(lines);
+
+	return status;
 }
