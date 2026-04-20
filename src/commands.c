@@ -545,48 +545,54 @@ out:
 	return ret;
 }
 
-int list_entry(int argc, char **argv)
+int show_entry(int argc, char **argv)
 {
 	int status;
-	FILE *file = NULL;
-	char **lines = NULL;
+	char **list = NULL;
+	char *path_to_boot = NULL;
+	char *entry_token = NULL;
 
-	if(argc < 2) {
-		printf("please provide path to file\n");
-		status = 1;
+	enum plank_status ret;
+	ret = get_entry_token(&entry_token);
+
+	if(ret != plank_OK) {
+		status = 2;
+		goto exit;
+	}
+
+	ret = get_boot_path(&path_to_boot);
+	
+	if(ret != plank_OK) {
+		status = 2;
+		goto exit;
+	}
+
+	list = list_loader_files(path_to_boot, entry_token);
+	if(list == NULL) {
+		status = 2;
 		goto exit;
 	}
 
 	char *target = argv[1];
 
-	file = fopen(target, "r");
-
-	if(file == NULL) {
-		perror("failed to open file \n");
-		return 2;
-	}
-
-	
-	lines = read_conf_file(file);
-
-	if(lines == NULL) {
-		printf("failed to parse given loader config file");
-		status = 3;
-		goto exit;
-	}
-
+	if(strcmp(target, "-l") == 0) goto just_list;
 
 	status = 0;
 
-exit:
-	if(file != NULL) fclose(file);
+just_list:
 
-	for(int i = 0; lines[i] != NULL; i++) {
-		printf("%s\n", lines[i]);
-		free(lines[i]);
+	for (int i = 0;list[i] != NULL; i++) {
+		printf("%s\n", list[i]);
 	}
 
-	free(lines);
+	status = 0;
+exit:
+	free(path_to_boot);
+	free(entry_token);
+
+	for(int i = 0; list[i] != NULL; i++) free(list[i]);
+
+	free(list);
 
 	return status;
 }

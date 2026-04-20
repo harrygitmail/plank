@@ -22,3 +22,5 @@ typedef struct {
 } loader_entry_w;
 
 char **read_conf_file(FILE *file);
+
+char **list_loader_files(char *BOOT, char *entry_token);
