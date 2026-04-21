@@ -75,7 +75,7 @@ out:
 	return lines;
 }
 
-char **list_loader_files(char *BOOT, char *entry_token)
+struct loader_entries *list_loader_entries(char *BOOT, char *entry_token)
 {
 #define MAXLEN 255
 
@@ -87,6 +87,7 @@ char **list_loader_files(char *BOOT, char *entry_token)
 	struct dirent *entries;
 
 	int nread;
+	int status;
 	size_t capacity = 5;
 	size_t c_line = 0;
 	size_t prefix_lenght;
@@ -94,6 +95,7 @@ char **list_loader_files(char *BOOT, char *entry_token)
 	nread = asprintf(&path_to_files, "%s/loader/entries", BOOT);
 	if(nread == -1) {
 		list = NULL;
+		status = -1;
 		goto out;
 	}
 
@@ -101,6 +103,7 @@ char **list_loader_files(char *BOOT, char *entry_token)
 
 	if(nread == -1) {
 		list = NULL;
+		status = -1;
 		goto out;
 	}
 
@@ -110,7 +113,10 @@ char **list_loader_files(char *BOOT, char *entry_token)
 
 	list = malloc(sizeof(char *) * capacity);
 
-	if(list == NULL) goto out;
+	if(list == NULL) {
+		status = -1;
+		goto out;
+	}
 
 	while((entries = readdir(dir)) != NULL) {
 
@@ -128,7 +134,10 @@ char **list_loader_files(char *BOOT, char *entry_token)
 			new_capacity = capacity * 2;
 			tmp = realloc(list, sizeof(char *) * new_capacity);
 
-			if(tmp == NULL) goto out;
+			if(tmp == NULL) {
+				status = -1;
+				goto out;
+			}
 
 			list = tmp;
 			capacity = new_capacity;
@@ -139,6 +148,25 @@ char **list_loader_files(char *BOOT, char *entry_token)
 
 		list[++c_line] = NULL;
 	}
+
+	if(c_line == 0) {
+		free(list);
+		list = NULL;
+		status = 0;
+		goto out;
+	}
+
+	status = 0;
 out:
-	return list;
+	free(path_to_files);
+	free(prefix);
+	closedir(dir);
+
+	struct loader_entries *entrie_list;
+	entrie_list = malloc(sizeof(struct loader_entries));
+	entrie_list->list = list;
+	entrie_list->counts = c_line;
+	entrie_list->error = status;
+
+	return entrie_list;
 }

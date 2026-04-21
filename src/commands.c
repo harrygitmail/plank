@@ -443,98 +443,41 @@ clean_all:
 
 	if(ret == plank_err) goto out;
 
-	DIR *entries = NULL;
-	struct dirent *entrie = NULL;	
-	char *path_to_entries = NULL;
-	char *file_name_to_compare = NULL;
-	char **list_to_delete = NULL;
-	
-	len = asprintf(&path_to_entries, "%s/loader/entries/", boot_path);
-	if(len == -1) {
-		ret = -1;
-		goto clean_all_out;
-	}
-	
-	len = asprintf(&file_name_to_compare, "snapshot-%s", entry_token);
-	if(len == -1 ) {
-		ret = -1;
-		goto clean_all_out;
+	struct loader_entries *list_to_delete = NULL;
+
+	list_to_delete = list_loader_entries(boot_path, entry_token);
+
+	if(list_to_delete == NULL && list_to_delete->error != 0) {
+		ret = list_to_delete->error;
+		printf("failed to delete entries\n");
+		goto out;
 	}
 
-	errno = 0;
-
-	entries = opendir(path_to_entries);
-
-	if(entries == NULL) {
-		printf("problem in opening %s\n", path_to_entries);
-		ret = 1;
-		goto clean_all_out;
-	}
-
-	size_t capacity = 6;
-	size_t n = 0;
-	size_t fnc_len = strlen(file_name_to_compare);
-
-	list_to_delete = malloc(sizeof(char *) * capacity);
-	list_to_delete[n] = NULL;
-
-	errno = 0;
-
-	while((entrie = readdir(entries)) != NULL) {
-
-		if(n > capacity) {
-			size_t new_capacity = capacity * 2;
-			char *tmp = realloc(list_to_delete, new_capacity);
-			if(tmp == NULL) goto clean_all_out;
-
-			list_to_delete = &tmp;
-			capacity = new_capacity;
-		}
-
-		int cmp;
-		cmp = strncmp(entrie->d_name, ".", 1);
-
-		if(cmp == 0) continue;
-
-		cmp = strncmp(entrie->d_name, file_name_to_compare, fnc_len);
-
-		if (cmp == 0) {
-			char *tmp = strdup(entrie->d_name);
-			if(tmp == NULL) goto clean_all_out;
-
-			list_to_delete[n++] = tmp;
-
-			list_to_delete[n] = NULL;
-		}
-
-	}
-
-
-	if(n == 0) {
-		printf("no file to remove\n");
+	if(list_to_delete->counts == 0) {
+		printf("No entry to delete\n");
 		ret = 0;
-		goto clean_all_out;
+		goto out;
 	}
 
-	for(int i = 0; list_to_delete[i] != NULL; i++) {
-		printf("file to remove %s/loader/entries/%s\n",
-				boot_path,
-				list_to_delete[i]);
+	char *path_to_file = NULL;
 
+	printf("about to delete following files:\n");
+
+	for(size_t i = 0; i < list_to_delete->counts; i++) {
+
+	asprintf(&path_to_file, "%s/loader/entries/%s",
+			boot_path,
+			list_to_delete->list[i]);
+
+	printf("%s\n", path_to_file);
+	unlink(path_to_file);
+
+	free(path_to_file);
+	free(list_to_delete->list[i]);
 	}
 
-
-clean_all_out:
-
-	closedir(entries);
-
-	free(file_name_to_compare);
-	free(path_to_entries);
-
-	for(int i = 0; list_to_delete[i] != NULL; i++) free(list_to_delete[i]);
-	
-	free(list_to_delete);	
-
+	free(list_to_delete->list);
+	free(list_to_delete);
 
 out:
 	if(tar_subvol_fd != -1) close(tar_subvol_fd);
@@ -548,7 +491,7 @@ out:
 int show_entry(int argc, char **argv)
 {
 	int status;
-	char **list = NULL;
+	struct loader_entries *entries = NULL;
 	char *path_to_boot = NULL;
 	char *entry_token = NULL;
 
@@ -567,9 +510,11 @@ int show_entry(int argc, char **argv)
 		goto exit;
 	}
 
-	list = list_loader_files(path_to_boot, entry_token);
-	if(list == NULL) {
-		status = 2;
+	entries = list_loader_entries(path_to_boot, entry_token);
+
+	if(entries->counts == 0) {
+		printf("no loader entries found\n");
+		status = entries->error;
 		goto exit;
 	}
 
@@ -581,8 +526,8 @@ int show_entry(int argc, char **argv)
 
 just_list:
 
-	for (int i = 0;list[i] != NULL; i++) {
-		printf("%s\n", list[i]);
+	for (size_t i = 0; i < entries->counts; i++) {
+		printf("%s\n", entries->list[i]);
 	}
 
 	status = 0;
@@ -590,9 +535,10 @@ exit:
 	free(path_to_boot);
 	free(entry_token);
 
-	for(int i = 0; list[i] != NULL; i++) free(list[i]);
+	if(entries != NULL) for(size_t i = 0; i < entries->counts; i++) free(entries->list[i]);
 
-	free(list);
+	free(entries->list);
+	free(entries);
 
 	return status;
 }

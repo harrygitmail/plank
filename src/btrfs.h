@@ -31,6 +31,7 @@ enum plank_status {
 	plank_err,
 	plank_mem_err,
 	plank_boot_not_found,
+	plank_NO_ENTRY,
 };
 
 /* get_snapshot_list - get list of snapshot_info 

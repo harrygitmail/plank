@@ -23,4 +23,16 @@ typedef struct {
 
 char **read_conf_file(FILE *file);
 
-char **list_loader_files(char *BOOT, char *entry_token);
+/*list_loader_entries - store list of loader entries and its releted info
+ * @ilst : pointer to list.
+ * @counts : number of entries.
+ * @error: indicate any error if there is any
+ */
+
+struct loader_entries {
+	char **list;
+	size_t counts;
+	int error;
+};
+
+struct loader_entries *list_loader_entries(char *BOOT, char *entry_token);
