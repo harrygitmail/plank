@@ -13,17 +13,21 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <dirent.h>
-#include <errno.h>
 
 int show_host_info(int argc, char **argv)
 {
 	
 	int my_root_fd;
-	my_root_fd = open("/", O_RDONLY);
-
-	snapshot_info *my_root_snapshot = NULL;
-
 	enum plank_status ret;
+	
+	snapshot_info *my_root_snapshot = NULL;
+	char *entry_token = NULL;
+	char *pretty_name = NULL;
+	kernel_list *host = NULL;
+	char *host_uuid = NULL;
+	char *boot_path = NULL;
+
+	my_root_fd = open("/", O_RDONLY);
 
 	ret = get_snapshot_list(my_root_fd, &my_root_snapshot);
 
@@ -33,10 +37,7 @@ int show_host_info(int argc, char **argv)
 		return 0;
 	}
 
-	if(ret != plank_OK) {
-		free(my_root_snapshot);
-		return 1;
-	}
+	if(ret != plank_OK) goto out;
 
 	for(int i = 0; ; i++) {
 		if(my_root_snapshot[i].snapshot_id == 0)
@@ -45,23 +46,12 @@ int show_host_info(int argc, char **argv)
 
 		printf("snapshot id: %" PRIu64 "\n", my_root_snapshot[i].snapshot_id);
 	}
-
-	char *entry_token = NULL;
 	ret = get_entry_token(&entry_token);
 
 	printf("entry token: %s\n", entry_token);
-
-	free(entry_token);
-
-	char *pretty_name = NULL;
-
 	ret = get_value_by_key(&pretty_name, "PRETTY_NAME");
 
 	printf("pretty name: %s\n", pretty_name);
-
-	free(pretty_name);
-
-	kernel_list *host = NULL;
 
 	ret = get_kernel_list(&host);
 
@@ -70,31 +60,32 @@ int show_host_info(int argc, char **argv)
 		
 		printf("kernel version: %s found\n", host[i].kernel_ver);
 	}
-
-	free(host);
-
-	char *host_uuid = NULL;
-
 	ret = get_host_uuid(&host_uuid);
 	printf("host UUID: %s\n", host_uuid);
-	
-	free(host_uuid);
-
-	char *boot_path = NULL;
 	ret = get_boot_path(&boot_path);
 
-	if( ret == plank_err) return 4;
+	if( ret == plank_err) {
+		ret = 4;
+		goto out;
+	}
 
 	if(ret == plank_boot_not_found) {
 		printf("$BOOT not found on its usual location:\n"
-				" /efi /boot /boot/efi ");
-		return 0 ;
+				"\t/efi /boot /boot/efi \n");
+		goto out;
 	}
 
 	printf("path to $BOOT : %s\n", boot_path);
+
+out:
+	free(host);
+	free(entry_token);
+	free(pretty_name);
+	free(host_uuid);
 	free(boot_path);
+	free(my_root_snapshot);
 	
-	return 0;
+	return ret;
 }
 
 int make_entry(int argc, char **argv)
@@ -144,7 +135,7 @@ int make_entry(int argc, char **argv)
 	ret = get_boot_path(&boot_path);
 
 	if(ret == plank_boot_not_found) {
-		fprintf(stderr, "unable to find $BOOT is it correctly mounted?");
+		fprintf(stderr, "unable to find $BOOT is it correctly mounted?\n");
 		goto out;
 	}
 
@@ -407,6 +398,7 @@ int clean(int argc , char **argv) {
 
 	kernel_list *host = NULL;
 	snapshot_info *tar_subvol_snapshot = NULL;
+	struct loader_entries *entries = NULL;
 
 	char *entry_token = NULL;
 	char *boot_path = NULL;
@@ -428,6 +420,31 @@ int clean(int argc , char **argv) {
 	ret = get_kernel_list(&host);
 	if(ret == plank_err) goto out;
 
+	ret = get_entry_token(&entry_token);
+	if(ret == plank_err) goto out;
+
+	ret = get_boot_path(&boot_path);
+	if(ret == plank_boot_not_found) {
+		printf("unable to find $BOOT. is it mounted correctly ?\n");
+		ret = 2;
+		goto out;
+	}
+
+	if(ret == plank_err) goto out;
+	entries = list_loader_entries(boot_path, entry_token);
+
+	if(entries->counts == 0) {
+		printf("No loader entry to remove\n");
+		ret = 0;
+		goto out;
+	}
+
+	if(entries->error != 0) {
+		printf("failed to get loader entrie list\n");
+		ret = entries->error;
+		goto out;
+	}
+
 	goto out;
 
 clean_all:
@@ -443,17 +460,15 @@ clean_all:
 
 	if(ret == plank_err) goto out;
 
-	struct loader_entries *list_to_delete = NULL;
+	entries = list_loader_entries(boot_path, entry_token);
 
-	list_to_delete = list_loader_entries(boot_path, entry_token);
-
-	if(list_to_delete == NULL && list_to_delete->error != 0) {
-		ret = list_to_delete->error;
+	if(entries == NULL && entries->error != 0) {
+		ret = entries->error;
 		printf("failed to delete entries\n");
 		goto out;
 	}
 
-	if(list_to_delete->counts == 0) {
+	if(entries->counts == 0) {
 		printf("No entry to delete\n");
 		ret = 0;
 		goto out;
@@ -463,21 +478,17 @@ clean_all:
 
 	printf("about to delete following files:\n");
 
-	for(size_t i = 0; i < list_to_delete->counts; i++) {
+	for(size_t i = 0; i < entries->counts; i++) {
 
 	asprintf(&path_to_file, "%s/loader/entries/%s",
 			boot_path,
-			list_to_delete->list[i]);
+			entries->list[i]);
 
 	printf("%s\n", path_to_file);
 	unlink(path_to_file);
 
 	free(path_to_file);
-	free(list_to_delete->list[i]);
 	}
-
-	free(list_to_delete->list);
-	free(list_to_delete);
 
 out:
 	if(tar_subvol_fd != -1) close(tar_subvol_fd);
@@ -485,6 +496,14 @@ out:
 	free(tar_subvol_snapshot);
 	free(entry_token);
 	free(boot_path);
+
+	if(entries != NULL) {
+		for(size_t i = 0; i < entries->counts; i++) free(entries->list[i]);
+		free(entries->list);
+	}
+
+	free(entries);
+
 	return ret;
 }
 
@@ -518,9 +537,9 @@ int show_entry(int argc, char **argv)
 		goto exit;
 	}
 
-	char *target = argv[1];
+	char *option = argv[1];
 
-	if(strcmp(target, "-l") == 0) goto just_list;
+	if(strcmp(option, "-l") == 0) goto just_list;
 
 	status = 0;
 

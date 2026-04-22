@@ -161,18 +161,20 @@ enum plank_status get_host_uuid(char **ret)
 		goto out;
 	}
 
-	f_ret = blkid_do_safeprobe(pr);
+	int ret_tmp;
 
-	if(f_ret != 0) {
+	ret_tmp = blkid_do_safeprobe(pr);
+
+	if(ret_tmp != 0) {
 		f_ret = plank_err;
 		goto out;
 	}
 
 	const char *target_uuid = NULL;
 
-	f_ret = blkid_probe_lookup_value(pr, "UUID", &target_uuid, NULL);
+	ret_tmp = blkid_probe_lookup_value(pr, "UUID", &target_uuid, NULL);
 
-	if(f_ret == -1) {
+	if(ret_tmp == -1) {
 		f_ret = plank_err;
 		goto out;
 	}

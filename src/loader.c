@@ -143,7 +143,6 @@ struct loader_entries *list_loader_entries(char *BOOT, char *entry_token)
 			capacity = new_capacity;
 		}
 
-		list[c_line] = malloc(sizeof(char) * entrie_s);
 		list[c_line] = strndup(entries->d_name, entrie_s);
 
 		list[++c_line] = NULL;
