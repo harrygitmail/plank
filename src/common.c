@@ -1,6 +1,8 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <stddef.h>
+#include <stdint.h>
+#include <time.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -213,4 +215,30 @@ enum plank_status get_boot_path(char **ret)
 	}
 
 	return plank_boot_not_found;
+}
+
+enum plank_status get_ker_ver_snap_tim(
+	char *file_name,
+	char *kernel_ver,
+	struct timespec *tm)
+{
+	enum plank_status ret = plank_OK;
+	char *target = strdup(file_name);
+	char *machine_id_start = strchr(target, '-') + 1;
+	char *kernel_ver_start = strchr(machine_id_start, '-') + 1;
+	char *snap_time_start = strrchr(target, '-') + 1;
+	char *kernel_ver_nul = snap_time_start - 1;
+	*kernel_ver_nul = '\0';
+
+	size_t kernel_ver_len = strlen(kernel_ver_start);
+
+	strncpy(kernel_ver, kernel_ver_start, kernel_ver_len + 1);
+
+	tm->tv_sec = atol(snap_time_start);
+	tm->tv_nsec = 0;
+
+out:
+	free(target);
+
+	return ret;
 }

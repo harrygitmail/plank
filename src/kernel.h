@@ -7,9 +7,15 @@
  * running on 1991 toaster or a custom NASA space-probe
  */
 
-
-typedef struct {
+struct kernel_ver {
 	char kernel_ver[65];
+};
+
+#include <stddef.h>
+typedef struct {
+	struct kernel_ver *list;
+	size_t counts;
+
 } kernel_list;
 
 /* get_kernel_list - get list of kernel installed on system
@@ -22,4 +28,4 @@ typedef struct {
  * possible solution could be to check exsistance of Linux kernel image in that 
  * folder but it may make one function doing lots of work.
  */
-enum plank_status get_kernel_list(kernel_list **ret);
+enum plank_status get_kernel_list(kernel_list *ret);

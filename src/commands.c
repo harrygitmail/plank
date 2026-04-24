@@ -23,7 +23,8 @@ int show_host_info(int argc, char **argv)
 	snapshot_info *my_root_snapshot = NULL;
 	char *entry_token = NULL;
 	char *pretty_name = NULL;
-	kernel_list *host = NULL;
+	kernel_list host;
+	host.list = NULL;
 	char *host_uuid = NULL;
 	char *boot_path = NULL;
 
@@ -55,10 +56,8 @@ int show_host_info(int argc, char **argv)
 
 	ret = get_kernel_list(&host);
 
-	for(int i = 0; ; i++) {
-		if(memcmp(host[i].kernel_ver, "STOP", 4) == 0) break;
-		
-		printf("kernel version: %s found\n", host[i].kernel_ver);
+	for(size_t i = 0; i < host.counts; i++) {
+		printf("kernel version: %s found\n", host.list[i].kernel_ver);
 	}
 	ret = get_host_uuid(&host_uuid);
 	printf("host UUID: %s\n", host_uuid);
@@ -78,7 +77,7 @@ int show_host_info(int argc, char **argv)
 	printf("path to $BOOT : %s\n", boot_path);
 
 out:
-	free(host);
+	free(host.list);
 	free(entry_token);
 	free(pretty_name);
 	free(host_uuid);
@@ -92,7 +91,8 @@ int make_entry(int argc, char **argv)
 {
 	snapshot_info *tar_subvol = NULL;
 	loader_entry_w *host_loader = NULL;
-	kernel_list *host = NULL;
+	kernel_list host;
+	host.list = NULL;
 
 	char *pretty_name = NULL;
 	char *entry_token = NULL;
@@ -168,9 +168,7 @@ int make_entry(int argc, char **argv)
 		localtime_r(&tar_subvol[i].snapshot_time.tv_sec, &t);
 		strftime(date_time, sizeof(date_time), "%Y-%m-%d %H:%M:%S", &t);
 
-		for (int y = 0; ; y++) {
-			if(strncmp(host[y].kernel_ver, "STOP", 4) == 0) break;
-
+		for (size_t y = 0; y < host.counts; y++) {
 			if(n > capacity) {
 				size_t new_capacity = capacity * 2;
 				loader_entry_w *tmp = realloc(host_loader, new_capacity);
@@ -191,25 +189,25 @@ int make_entry(int argc, char **argv)
 
 			len = asprintf(&filename, "snapshot-%s-%s-%ld.conf",
 					entry_token, 
-					host[y].kernel_ver, 
+					host.list[y].kernel_ver,
 					tar_subvol[i].snapshot_time.tv_sec);
 
 			len = asprintf(&title, "snapshot %s %s %s",
 					pretty_name,
 					date_time,
-					host[y].kernel_ver);
+					host.list[y].kernel_ver);
 
 			len = asprintf(&sort_key, "%s-%s",
 					id,
-					host[y].kernel_ver);
+					host.list[y].kernel_ver);
 
 			len = asprintf(&path_to_kernel, "/%s/%s/linux",
 					entry_token,
-					host[y].kernel_ver);
+					host.list[y].kernel_ver);
 
 			len = asprintf(&path_to_initrd, "/%s/%s/initrd",
 					entry_token,
-					host[y].kernel_ver);
+					host.list[y].kernel_ver);
 
 			len = asprintf(&options, "root=UUID=%s rw rootflags=subvolid=%" PRIu64 
 					" loglevel=3 quiet systemd.machine_id=%s",
@@ -218,7 +216,7 @@ int make_entry(int argc, char **argv)
 					entry_token);
 			
 			len = asprintf(&version, "%s",
-					host[y].kernel_ver);
+					host.list[y].kernel_ver);
 
 
 
@@ -378,7 +376,7 @@ out:
 	
 	free(tar_subvol);
 	free(host_loader);
-	free(host);
+	free(host.list);
 
 	free(boot_path);
 	free(pretty_name);
@@ -396,7 +394,8 @@ int clean(int argc , char **argv) {
 	int len;
 	int tar_subvol_fd;
 
-	kernel_list *host = NULL;
+	kernel_list host;
+	host.list = NULL;
 	snapshot_info *tar_subvol_snapshot = NULL;
 	struct loader_entries *entries = NULL;
 
@@ -443,6 +442,60 @@ int clean(int argc , char **argv) {
 		printf("failed to get loader entrie list\n");
 		ret = entries->error;
 		goto out;
+	}
+
+	kernel_list entrie_kern;
+	entrie_kern.list = NULL;
+	entrie_kern.counts = entries->counts;
+	snapshot_info *entrie_snap_info = NULL;
+
+	size_t capacity = entries->counts;
+
+	entrie_kern.list = malloc(sizeof(struct kernel_ver) * capacity);
+	entrie_snap_info = malloc(sizeof(snapshot_info) * capacity);
+
+	for(size_t i = 0; i < entries->counts; i++) {
+
+		ret = get_ker_ver_snap_tim(
+			entries->list[i],
+			entrie_kern.list[i].kernel_ver,
+			&entrie_snap_info[i].snapshot_time);
+
+		if(ret == plank_err) goto out;
+
+	}
+
+	size_t *d_index = malloc(sizeof(size_t) * entries->counts);
+	size_t d_i = 0;
+
+	for (size_t i = 0; i < entrie_kern.counts; i++) {
+		int found = 0;
+
+		for (size_t j = 0; j < host.counts; j++) {
+			if (strcmp(entrie_kern.list[i].kernel_ver, host.list[j].kernel_ver) == 0) {
+				found = 1;
+				break;
+			}
+		}
+
+		if (!found) {
+			d_index[d_i] = i;
+			++d_i;
+		}
+	}
+
+	if(d_i == 0) {
+		printf("No entry to remove\n");
+		ret = plank_OK;
+		goto out;
+	}
+
+	char *delete_file = NULL;
+	for(size_t i = 0; i < d_i; i++) {
+		asprintf(&delete_file, "%s/loader/entries/%s", boot_path, entries->list[d_index[i]]);
+		printf("about to delete %s\n", delete_file);
+		unlink(delete_file);
+		free(delete_file);
 	}
 
 	goto out;
@@ -492,7 +545,7 @@ clean_all:
 
 out:
 	if(tar_subvol_fd != -1) close(tar_subvol_fd);
-	free(host);
+	free(host.list);
 	free(tar_subvol_snapshot);
 	free(entry_token);
 	free(boot_path);
@@ -501,6 +554,11 @@ out:
 		for(size_t i = 0; i < entries->counts; i++) free(entries->list[i]);
 		free(entries->list);
 	}
+
+	free(entrie_kern.list);
+	free(entrie_snap_info);
+
+	free(d_index);
 
 	free(entries);
 

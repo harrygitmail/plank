@@ -1,3 +1,6 @@
+#include <inttypes.h>
+#include <time.h>
+
 /* get_entry_token - get entry token from host system.
  * 
  * @ret: pointer to entry token string. 
@@ -39,4 +42,10 @@ enum plank_status get_host_uuid(char **ret);
  */
 
 enum plank_status get_boot_path(char **ret);
+
+
+enum plank_status get_ker_ver_snap_tim(
+	char *file_name,
+	char *kernel_ver,
+	struct timespec *tm);
 
