@@ -142,7 +142,9 @@ enum plank_status get_host_uuid(char **ret)
 
 	const char *target_mountpoint = "/";
 
-	fs = mnt_table_find_target(tb, target_mountpoint, MNT_ITER_BACKWARD);
+	fs = mnt_table_find_target(
+		tb, target_mountpoint,
+		MNT_ITER_BACKWARD);
 
 	if( fs == NULL) {
 		f_ret = plank_err;
@@ -174,7 +176,8 @@ enum plank_status get_host_uuid(char **ret)
 
 	const char *target_uuid = NULL;
 
-	ret_tmp = blkid_probe_lookup_value(pr, "UUID", &target_uuid, NULL);
+	ret_tmp = blkid_probe_lookup_value(
+		pr, "UUID", &target_uuid, NULL);
 
 	if(ret_tmp == -1) {
 		f_ret = plank_err;

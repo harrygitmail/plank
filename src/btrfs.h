@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include <time.h>
 #include <inttypes.h>
 
@@ -21,6 +22,11 @@ typedef struct {
 	uint64_t snapshot_id;
 	struct timespec snapshot_time;
 } snapshot_info;
+
+struct snapshot_list {
+	snapshot_info *snapshot_info;
+	size_t counts;
+};
 
 enum plank_status {
 	plank_OK,
@@ -46,4 +52,6 @@ enum plank_status {
  * memory leaks.
  */
 
-enum plank_status get_snapshot_list(int tar_subvol_fd, snapshot_info **ret);
+enum plank_status get_snapshot_list(
+	int tar_subvol_fd, 
+	struct snapshot_list *ret);

@@ -20,7 +20,9 @@ int show_host_info(int argc, char **argv)
 	int my_root_fd;
 	enum plank_status ret;
 	
-	snapshot_info *my_root_snapshot = NULL;
+	struct snapshot_list my_root_snapshot_list;
+	my_root_snapshot_list.snapshot_info = NULL;
+
 	char *entry_token = NULL;
 	char *pretty_name = NULL;
 	kernel_list host;
@@ -30,22 +32,21 @@ int show_host_info(int argc, char **argv)
 
 	my_root_fd = open("/", O_RDONLY);
 
-	ret = get_snapshot_list(my_root_fd, &my_root_snapshot);
+	ret = get_snapshot_list(my_root_fd, &my_root_snapshot_list);
 
 	if(ret == plank_NO_SNAPSHOT_FOUND) {
 		printf("no snapshot found\n");
-		free(my_root_snapshot);
+		free(my_root_snapshot_list.snapshot_info);
 		return 0;
 	}
 
 	if(ret != plank_OK) goto out;
 
-	for(int i = 0; ; i++) {
-		if(my_root_snapshot[i].snapshot_id == 0)
-			break;
+	for(size_t i = 0; i < my_root_snapshot_list.counts; i++) {
 
-
-		printf("snapshot id: %" PRIu64 "\n", my_root_snapshot[i].snapshot_id);
+		printf(
+			"snapshot id: %" PRIu64 "\n", 
+			my_root_snapshot_list.snapshot_info[i].snapshot_id);
 	}
 	ret = get_entry_token(&entry_token);
 
@@ -82,14 +83,15 @@ out:
 	free(pretty_name);
 	free(host_uuid);
 	free(boot_path);
-	free(my_root_snapshot);
+	free(my_root_snapshot_list.snapshot_info);
 	
 	return ret;
 }
 
 int make_entry(int argc, char **argv)
 {
-	snapshot_info *tar_subvol = NULL;
+	struct snapshot_list tar_subvol_snap_list;
+	tar_subvol_snap_list.snapshot_info = NULL;
 	loader_entry_w *host_loader = NULL;
 	kernel_list host;
 	host.list = NULL;
@@ -115,7 +117,7 @@ int make_entry(int argc, char **argv)
 		goto out;
 	}
 
-	ret = get_snapshot_list(tar_subvol_fd, &tar_subvol);
+	ret = get_snapshot_list(tar_subvol_fd, &tar_subvol_snap_list);
 
 	if(ret == plank_NO_SNAPSHOT_FOUND) {
 		printf("NO snapshot found\n");
@@ -159,13 +161,15 @@ int make_entry(int argc, char **argv)
 
 	host_loader = malloc(sizeof(loader_entry_w) * capacity);
 
-	for(int i = 0; ; i++) {
-		if(tar_subvol[i].snapshot_id == 0) break;
+	for(size_t i = 0; i < tar_subvol_snap_list.counts; i++) {
 
 		struct tm t;
 		char date_time[32];
 
-		localtime_r(&tar_subvol[i].snapshot_time.tv_sec, &t);
+		localtime_r(
+			&tar_subvol_snap_list.snapshot_info[i].snapshot_time.tv_sec,
+			&t);
+
 		strftime(date_time, sizeof(date_time), "%Y-%m-%d %H:%M:%S", &t);
 
 		for (size_t y = 0; y < host.counts; y++) {
@@ -190,7 +194,7 @@ int make_entry(int argc, char **argv)
 			len = asprintf(&filename, "snapshot-%s-%s-%ld.conf",
 					entry_token, 
 					host.list[y].kernel_ver,
-					tar_subvol[i].snapshot_time.tv_sec);
+					tar_subvol_snap_list.snapshot_info[i].snapshot_time.tv_sec);
 
 			len = asprintf(&title, "snapshot %s %s %s",
 					pretty_name,
@@ -212,7 +216,7 @@ int make_entry(int argc, char **argv)
 			len = asprintf(&options, "root=UUID=%s rw rootflags=subvolid=%" PRIu64 
 					" loglevel=3 quiet systemd.machine_id=%s",
 					host_uuid, 
-					tar_subvol[i].snapshot_id,
+					tar_subvol_snap_list.snapshot_info[i].snapshot_id,
 					entry_token);
 			
 			len = asprintf(&version, "%s",
@@ -374,7 +378,7 @@ write_out:
 	}
 out:
 	
-	free(tar_subvol);
+	free(tar_subvol_snap_list.snapshot_info);
 	free(host_loader);
 	free(host.list);
 
@@ -396,7 +400,8 @@ int clean(int argc , char **argv) {
 
 	kernel_list host;
 	host.list = NULL;
-	snapshot_info *tar_subvol_snapshot = NULL;
+	struct snapshot_list tar_subvol_list;
+	tar_subvol_list.snapshot_info = NULL;
 	struct loader_entries *entries = NULL;
 
 	char *entry_token = NULL;
@@ -409,7 +414,7 @@ int clean(int argc , char **argv) {
 		goto out;
 	}
 
-	ret = get_snapshot_list(tar_subvol_fd, &tar_subvol_snapshot);
+	ret = get_snapshot_list(tar_subvol_fd, &tar_subvol_list);
 
 	if(ret == plank_NO_SNAPSHOT_FOUND) {
 		printf("no snapshot found\n");
@@ -447,19 +452,20 @@ int clean(int argc , char **argv) {
 	kernel_list entrie_kern;
 	entrie_kern.list = NULL;
 	entrie_kern.counts = entries->counts;
-	snapshot_info *entrie_snap_info = NULL;
+	struct snapshot_list entries_snap_list;
+	entries_snap_list.snapshot_info = NULL;
 
 	size_t capacity = entries->counts;
 
 	entrie_kern.list = malloc(sizeof(struct kernel_ver) * capacity);
-	entrie_snap_info = malloc(sizeof(snapshot_info) * capacity);
+	entries_snap_list.snapshot_info = malloc(sizeof(snapshot_info) * capacity);
 
 	for(size_t i = 0; i < entries->counts; i++) {
 
 		ret = get_ker_ver_snap_tim(
 			entries->list[i],
 			entrie_kern.list[i].kernel_ver,
-			&entrie_snap_info[i].snapshot_time);
+			&entries_snap_list.snapshot_info[i].snapshot_time);
 
 		if(ret == plank_err) goto out;
 
@@ -472,7 +478,11 @@ int clean(int argc , char **argv) {
 		int found = 0;
 
 		for (size_t j = 0; j < host.counts; j++) {
-			if (strcmp(entrie_kern.list[i].kernel_ver, host.list[j].kernel_ver) == 0) {
+			int c = strcmp(
+				entrie_kern.list[i].kernel_ver,
+				host.list[j].kernel_ver);
+
+			if(c == 0) {
 				found = 1;
 				break;
 			}
@@ -546,7 +556,7 @@ clean_all:
 out:
 	if(tar_subvol_fd != -1) close(tar_subvol_fd);
 	free(host.list);
-	free(tar_subvol_snapshot);
+	free(tar_subvol_list.snapshot_info);
 	free(entry_token);
 	free(boot_path);
 
@@ -556,7 +566,7 @@ out:
 	}
 
 	free(entrie_kern.list);
-	free(entrie_snap_info);
+	free(entries_snap_list.snapshot_info);
 
 	free(d_index);
 
@@ -612,7 +622,10 @@ exit:
 	free(path_to_boot);
 	free(entry_token);
 
-	if(entries != NULL) for(size_t i = 0; i < entries->counts; i++) free(entries->list[i]);
+	if(entries != NULL) {
+		for(size_t i = 0; i < entries->counts; i++)
+			free(entries->list[i]);
+	}
 
 	free(entries->list);
 	free(entries);

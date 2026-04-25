@@ -5,7 +5,9 @@
 #include <string.h>
 #include <time.h>
 
-enum plank_status get_snapshot_list(int tar_subvol_fd, snapshot_info **ret)
+enum plank_status get_snapshot_list(
+	int tar_subvol_fd,
+	struct snapshot_list *ret)
 {
 	enum btrfs_util_error B_ret;
 	B_ret = btrfs_util_is_subvolume_fd(tar_subvol_fd);
@@ -37,14 +39,19 @@ enum plank_status get_snapshot_list(int tar_subvol_fd, snapshot_info **ret)
 	size_t capacity = 6;
 	size_t n = 0;
 
-	*ret = malloc(sizeof(snapshot_info) * capacity);
+	ret->snapshot_info = malloc(sizeof(snapshot_info) * capacity);
 
-	if (*ret == NULL) return plank_err;
+	if (ret->snapshot_info == NULL) return plank_err;
 
 	while((B_ret = btrfs_util_subvolume_iter_next_info(
-					tar_subvol_iter, &path, &subvol_info)) == BTRFS_UTIL_OK) {
+		tar_subvol_iter,
+		&path,
+		&subvol_info)) == BTRFS_UTIL_OK) {
 
-		int memcmp_ret = memcmp(tar_subvol_info.uuid, subvol_info.parent_uuid, 16);
+		int memcmp_ret = memcmp(
+			tar_subvol_info.uuid,
+			subvol_info.parent_uuid,
+			16);
 		
 		if(memcmp_ret != 0) {
 			free(path);
@@ -55,18 +62,18 @@ enum plank_status get_snapshot_list(int tar_subvol_fd, snapshot_info **ret)
 
 			size_t new_capacity = capacity * 2;
 
-			snapshot_info *temp = realloc(*ret, sizeof(snapshot_info) * new_capacity);
+			snapshot_info *temp = realloc(
+				ret->snapshot_info,
+				sizeof(snapshot_info) * new_capacity);
 
 			if(temp == NULL) return plank_err;
 
-			*ret = temp; 
+			ret->snapshot_info = temp;
 			capacity = new_capacity;
 		}
 
-		(*ret)[n].snapshot_id = subvol_info.id;
-		(*ret)[n].snapshot_time = subvol_info.otime;
-
-		(*ret)[n + 1].snapshot_id = 0;
+		ret->snapshot_info[n].snapshot_id = subvol_info.id;
+		ret->snapshot_info[n].snapshot_time = subvol_info.otime;
 
 		free(path);
 
@@ -77,6 +84,8 @@ enum plank_status get_snapshot_list(int tar_subvol_fd, snapshot_info **ret)
 	btrfs_util_destroy_subvolume_iterator(tar_subvol_iter);
 
 	if (n == 0) return plank_NO_SNAPSHOT_FOUND;
+
+	ret->counts = n;
 
 	return plank_OK;
 }
