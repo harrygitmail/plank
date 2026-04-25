@@ -24,7 +24,7 @@ typedef struct {
 } snapshot_info;
 
 struct snapshot_list {
-	snapshot_info *snapshot_info;
+	snapshot_info *list;
 	size_t counts;
 };
 
