@@ -39,9 +39,9 @@ enum plank_status get_snapshot_list(
 	size_t capacity = 6;
 	size_t n = 0;
 
-	ret->snapshot_info = malloc(sizeof(snapshot_info) * capacity);
+	ret->list = malloc(sizeof(snapshot_info) * capacity);
 
-	if (ret->snapshot_info == NULL) return plank_err;
+	if (ret->list == NULL) return plank_err;
 
 	while((B_ret = btrfs_util_subvolume_iter_next_info(
 		tar_subvol_iter,
@@ -63,17 +63,17 @@ enum plank_status get_snapshot_list(
 			size_t new_capacity = capacity * 2;
 
 			snapshot_info *temp = realloc(
-				ret->snapshot_info,
+				ret->list,
 				sizeof(snapshot_info) * new_capacity);
 
 			if(temp == NULL) return plank_err;
 
-			ret->snapshot_info = temp;
+			ret->list = temp;
 			capacity = new_capacity;
 		}
 
-		ret->snapshot_info[n].snapshot_id = subvol_info.id;
-		ret->snapshot_info[n].snapshot_time = subvol_info.otime;
+		ret->list[n].snapshot_id = subvol_info.id;
+		ret->list[n].snapshot_time = subvol_info.otime;
 
 		free(path);
 
