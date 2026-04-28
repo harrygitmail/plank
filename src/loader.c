@@ -5,6 +5,7 @@
 #include <string.h>
 #include "btrfs.h"
 #include "loader.h"
+#include "common.h"
 #include <sys/types.h>
 #include <dirent.h>
 
@@ -168,4 +169,63 @@ out:
 	entrie_list->error = status;
 
 	return entrie_list;
+}
+
+struct loader_entrie *link_loader_entries(
+	kernel_list *kern_list,
+	struct snapshot_list *snap_list,
+	struct loader_entries *entries)
+{
+	struct loader_entrie *ret;
+	size_t entrie_c = 0;
+
+	ret = malloc(sizeof(struct loader_entrie) * entries->counts);
+	if(ret == NULL) goto out;
+
+	snapshot_info temp_snap_struct;
+	char tmp_kern_ver[65];
+
+	for(size_t i = 0; i < entries->counts; i++) {
+		int found_kern = 0;
+		int snap_found = 0;
+
+		get_ker_ver_snap_tim(
+			entries->list[i],
+			tmp_kern_ver,
+			&temp_snap_struct.snapshot_time);
+
+		for(size_t j = 0; j < kern_list->counts; j++) {
+			if((strcmp(kern_list->list[j].kernel_ver, tmp_kern_ver)) == 0) {
+				found_kern = 1;
+				ret[entrie_c].kern = &kern_list->list[j];
+				break;
+			}
+
+		}
+
+		for(size_t k = 0; k < snap_list->counts; k++) {
+			if(
+				temp_snap_struct.snapshot_time.tv_sec ==
+				snap_list->list[k].snapshot_time.tv_sec
+			  ) {
+				snap_found = 1;
+				ret[entrie_c].snap = &snap_list->list[k];
+				break;
+			}
+		}
+
+		if(found_kern == 1 && snap_found == 1) {
+			ret[entrie_c].file_name = entries->list[i];
+			ret[entrie_c++].status = ENTRY_OK;
+		} else {
+			ret[entrie_c].file_name = entries->list[i];
+			ret[entrie_c++].status = ENTRY_DELETE_PENDING;
+		}
+
+	}
+
+	ret->counts = entrie_c;
+
+out:
+	return ret;
 }

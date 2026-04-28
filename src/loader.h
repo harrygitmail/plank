@@ -1,5 +1,8 @@
+#pragma once
 #include <sys/types.h>
 #include <stdio.h>
+#include "btrfs.h"
+#include "kernel.h"
 
 /* loader_entry - store pointers to memeory that hold specific info
  *
@@ -34,5 +37,25 @@ struct loader_entries {
 	size_t counts;
 	int error;
 };
+
+typedef enum {
+	ENTRY_OK,
+	ENTRY_DELETE_PENDING,
+} entry_status;
+
+struct loader_entrie {
+
+	char *file_name;
+	struct kernel_ver *kern;
+	snapshot_info *snap;
+	entry_status status;
+	size_t counts;
+
+};
+
+struct loader_entrie *link_loader_entries(
+	kernel_list *kern_list,
+	struct snapshot_list *snap_list,
+	struct loader_entries *entries);
 
 struct loader_entries *list_loader_entries(char *BOOT, char *entry_token);
