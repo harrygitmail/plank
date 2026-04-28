@@ -404,6 +404,8 @@ int clean(int argc , char **argv) {
 	tar_subvol_snap_info.list = NULL;
 	struct loader_entries *entries = NULL;
 
+	struct loader_entrie *entrie = NULL;
+
 	char *entry_token = NULL;
 	char *boot_path = NULL;
 
@@ -448,6 +450,8 @@ int clean(int argc , char **argv) {
 		ret = entries->error;
 		goto out;
 	}
+
+	goto new_test;
 
 	kernel_list entrie_kern;
 	entrie_kern.list = NULL;
@@ -515,6 +519,19 @@ int clean(int argc , char **argv) {
 	}
 
 	goto out;
+
+new_test:
+
+	entrie = link_loader_entries(&host, &tar_subvol_snap_info, entries);
+
+	for(size_t p = 0; p < entrie->counts; p++) {
+		if(entrie[p].status == ENTRY_DELETE_PENDING) {
+			printf("this file need to be deleted: %s\n", entrie[p].file_name);
+		}
+	}
+
+	goto out;
+
 
 clean_all:
 

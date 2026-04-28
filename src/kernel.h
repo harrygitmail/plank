@@ -1,3 +1,5 @@
+#pragma once
+#include "btrfs.h"
 /* kernel_list - store version string of Linux kernel
  *
  * @kernel_ver: hold version string

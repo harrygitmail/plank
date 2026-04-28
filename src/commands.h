@@ -1,5 +1,3 @@
-
-
 /* this  command is for testing logic please do not use otherwise.
  */
 int show_host_info(int argc, char **argv);
