@@ -408,6 +408,7 @@ int clean(int argc , char **argv) {
 
 	char *entry_token = NULL;
 	char *boot_path = NULL;
+	char **list_to_delete = NULL;
 
 	tar_subvol_fd = open("/", O_RDONLY);
 
@@ -451,84 +452,47 @@ int clean(int argc , char **argv) {
 		goto out;
 	}
 
-	goto new_test;
-
-	kernel_list entrie_kern;
-	entrie_kern.list = NULL;
-	entrie_kern.counts = entries->counts;
-	struct snapshot_list entries_snap_info;
-	entries_snap_info.list = NULL;
-	entries_snap_info.counts = entries->counts;
-
-	size_t capacity = entries->counts;
-
-	entrie_kern.list = malloc(sizeof(struct kernel_ver) * capacity);
-	entries_snap_info.list = malloc(sizeof(snapshot_info) * capacity);
-
-	for(size_t i = 0; i < entries->counts; i++) {
-
-		ret = get_ker_ver_snap_tim(
-			entries->list[i],
-			entrie_kern.list[i].kernel_ver,
-			&entries_snap_info.list[i].snapshot_time);
-
-		if(ret == plank_err) goto out;
-
-	}
-
-	size_t *d_index_k = malloc(sizeof(size_t) * entries->counts);
-	size_t d_k_i = 0;
-
-	for (size_t i = 0; i < entrie_kern.counts; i++) {
-		int found = 0;
-
-		for (size_t j = 0; j < host.counts; j++) {
-			int c = strcmp(
-				entrie_kern.list[i].kernel_ver,
-				host.list[j].kernel_ver);
-
-			if(c == 0) {
-				found = 1;
-				break;
-			}
-		}
-
-		if (!found) {
-			d_index_k[d_k_i] = i;
-			++d_k_i;
-		}
-	}
-
-	if(d_k_i == 0) {
-		printf("No entry to remove\n");
-		ret = plank_OK;
-		goto out;
-	}
-
-	char *delete_file = NULL;
-	for(size_t i = 0; i < d_k_i; i++) {
-		asprintf(
-			&delete_file,
-			"%s/loader/entries/%s",
-			boot_path,
-			entries->list[d_index_k[i]]);
-
-		printf("about to delete %s\n", delete_file);
-		unlink(delete_file);
-		free(delete_file);
-	}
-
-	goto out;
-
-new_test:
-
 	entrie = link_loader_entries(&host, &tar_subvol_snap_info, entries);
+
+	size_t entry_del_count = 0;
+	list_to_delete = malloc(sizeof(char *) * entrie->counts);
 
 	for(size_t p = 0; p < entrie->counts; p++) {
 		if(entrie[p].status == ENTRY_DELETE_PENDING) {
-			printf("this file need to be deleted: %s\n", entrie[p].file_name);
+			asprintf(&list_to_delete[entry_del_count++],
+				"%s/loader/entries/%s",
+				boot_path,
+				entrie[p].file_name);
 		}
 	}
+
+	if(entry_del_count == 0) {
+		printf("no loader entry to remove\n");
+		ret = 0;
+		goto out;
+	}
+
+	printf("about ot delete following entries\n");
+
+	for(size_t i = 0; i < entry_del_count; i++) {
+		printf("%s\n", list_to_delete[i]);
+	}
+
+	printf("type y and hit enter to delete them\n");
+	char input[100];
+	scanf("%s", input);
+
+	int c = strncmp(input, "y", 1);
+	if(c != 0) {
+		printf("Abort!!\n");
+		ret = 0;
+		goto out;
+	}
+
+	printf("deleting entries\n");
+
+	for(size_t i = 0; i < entry_del_count; i++)
+		unlink(list_to_delete[i]);
 
 	goto out;
 
@@ -588,12 +552,12 @@ out:
 			free(entries->list[i]);
 		free(entries->list);
 	}
+	free(entrie);
+	if(list_to_delete != NULL)
+		for(size_t i = 0; i < entry_del_count; i++)
+			free(list_to_delete[i]);
 
-	free(entrie_kern.list);
-	free(entries_snap_info.list);
-
-	free(d_index_k);
-
+	free(list_to_delete);
 	free(entries);
 
 	return ret;
