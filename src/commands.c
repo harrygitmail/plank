@@ -88,7 +88,7 @@ out:
 	return ret;
 }
 
-int make_entry(int argc, char **argv)
+int make_entrie(int argc, char **argv)
 {
 	struct snapshot_list tar_subvol_snap_info;
 	tar_subvol_snap_info.list = NULL;
@@ -526,7 +526,7 @@ clean_all:
 
 	char *path_to_file = NULL;
 
-	printf("about to delete following files:\n");
+	printf("deleting following files:\n");
 
 	for(size_t i = 0; i < entries->counts; i++) {
 
@@ -563,7 +563,7 @@ out:
 	return ret;
 }
 
-int show_entry(int argc, char **argv)
+int show_entrie(int argc, char **argv)
 {
 	int status;
 	struct loader_entries *entries = NULL;

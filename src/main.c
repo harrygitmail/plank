@@ -11,9 +11,9 @@ const char *program_name = "plank";
 
 command commands[] = {
 	{"show-host-info", show_host_info},
-	{"make-entry", make_entry},
+	{"make-entrie", make_entrie},
 	{"clean", clean},
-	{"show-entry", show_entry},
+	{"show-entrie", show_entrie},
 	{NULL,NULL}
 };
 
@@ -23,7 +23,9 @@ void usage()
 	printf("plank is in initial stage of development.\n"
 		"please do not use it on your system.\n"
 		"show-host-info: to show info about host\n"
-		"make-entry: to make systemd-boot entry\n");
+		"make-entrie: to make systemd-boot entry\n"
+		"clean: to remove unneccesary entry\n"
+		"show-entrie: show info of entry\n");
 }
 
 int main(int argc, char **argv)

@@ -10,9 +10,9 @@ int show_host_info(int argc, char **argv);
  * custome image or image are on $BOOT.
  */
 
-int make_entry(int argc, char **argv);
+int make_entrie(int argc, char **argv);
 
 
 int clean(int argc, char **argv);
 
-int show_entry(int argc, char **argv);
+int show_entrie(int argc, char **argv);
