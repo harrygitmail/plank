@@ -166,7 +166,7 @@ out:
 	entrie_list = malloc(sizeof(struct loader_entries));
 	entrie_list->list = list;
 	entrie_list->counts = c_line;
-	entrie_list->error = status;
+	entrie_list->status = status;
 
 	return entrie_list;
 }

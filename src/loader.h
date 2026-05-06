@@ -35,7 +35,7 @@ char **read_conf_file(FILE *file);
 struct loader_entries {
 	char **list;
 	size_t counts;
-	int error;
+	int status;
 };
 
 typedef enum {

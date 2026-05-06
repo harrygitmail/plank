@@ -446,9 +446,9 @@ int clean(int argc , char **argv) {
 		goto out;
 	}
 
-	if(entries->error != 0) {
+	if(entries->status != 0) {
 		printf("failed to get loader entrie list\n");
-		ret = entries->error;
+		ret = entries->status;
 		goto out;
 	}
 
@@ -512,8 +512,8 @@ clean_all:
 
 	entries = list_loader_entries(boot_path, entry_token);
 
-	if(entries == NULL && entries->error != 0) {
-		ret = entries->error;
+	if(entries == NULL && entries->status != 0) {
+		ret = entries->status;
 		printf("failed to delete entries\n");
 		goto out;
 	}
@@ -589,7 +589,7 @@ int show_entry(int argc, char **argv)
 
 	if(entries->counts == 0) {
 		printf("no loader entries found\n");
-		status = entries->error;
+		status = entries->status;
 		goto exit;
 	}
 
