@@ -245,3 +245,61 @@ out:
 
 	return ret;
 }
+
+char **list_files(const char *path, size_t *const count)
+{
+	char **files = NULL;
+	DIR *dir = NULL;
+	int status;
+
+	dir = opendir(path);
+
+	if(dir == NULL) {
+		files = NULL;
+		status = -1;
+		goto out;
+	}
+
+	struct dirent *file;
+	size_t capacity = 5;
+	size_t count_file = 0;
+
+	while((file = readdir(dir)) != NULL) {
+
+		if(count_file >= capacity - 1) {
+			size_t new_capacity = capacity * 2;
+			char **tmp = NULL;
+			tmp = realloc(files, new_capacity);
+			if(tmp == NULL) {
+				status = -1;
+				goto out;
+			}
+
+			files = tmp;
+			capacity = new_capacity;
+		}
+
+		files[count_file] = strdup(file->d_name);
+		count_file++;
+
+		/*
+		 * we keep NULL at the end because callerexpects a
+		 * NULL terminated list
+		 */
+
+		files[count_file] = NULL;
+	}
+
+	status = 0;
+
+out:
+	closedir(dir);
+
+	if(status == -1) {
+		for(size_t i = 0; i < count_file; i++) free(files[i]);
+
+		free(files);
+	}
+	*count = count_file;
+	return files;
+}

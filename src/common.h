@@ -51,3 +51,4 @@ enum plank_status get_ker_ver_snap_tim(
 	char *kernel_ver,
 	struct timespec *tm);
 
+char **list_files(const char *path, size_t  *const count);
