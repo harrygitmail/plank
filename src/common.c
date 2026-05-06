@@ -294,7 +294,7 @@ char **list_files(const char *path, size_t *const count)
 		count_file++;
 
 		/*
-		 * we keep NULL at the end because callerexpects a
+		 * we keep NULL at the end because caller expects a
 		 * NULL terminated list
 		 */
 

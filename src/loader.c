@@ -78,20 +78,16 @@ out:
 
 struct loader_entries *list_loader_entries(char *BOOT, char *entry_token)
 {
-#define MAXLEN 255
-
 	char *path_to_files = NULL;
 	char **list = NULL;
 	char *prefix = NULL;
-
-	DIR *dir = NULL;
-	struct dirent *entries;
+	char **files = NULL;
 
 	int nread;
 	int status;
-	size_t capacity = 5;
 	size_t c_line = 0;
 	size_t prefix_lenght;
+	size_t counts = 0;
 
 	nread = asprintf(&path_to_files, "%s/loader/entries", BOOT);
 	if(nread == -1) {
@@ -110,43 +106,18 @@ struct loader_entries *list_loader_entries(char *BOOT, char *entry_token)
 
 	prefix_lenght = strlen(prefix);
 
-	dir = opendir(path_to_files);
+	files = list_files(path_to_files, &counts);
 
-	list = malloc(sizeof(char *) * capacity);
+	list = malloc(sizeof(char *) * counts);
 
-	if(list == NULL) {
-		status = -1;
-		goto out;
-	}
+	for (size_t i = 0; i < counts; i++) {
 
-	while((entries = readdir(dir)) != NULL) {
+		int c = strncmp(files[i], prefix, prefix_lenght);
 
-		size_t entrie_s = strnlen(entries->d_name, MAXLEN + 1);
+		if (c != 0) continue;
 
-		if(entrie_s < prefix_lenght) continue;
+		list[c_line++] = strdup(files[i]);
 
-		int n = strncmp(entries->d_name, prefix, prefix_lenght);
-
-		if(n != 0) continue;
-
-		if(c_line >= capacity) {
-			char **tmp;
-			size_t new_capacity;
-			new_capacity = capacity * 2;
-			tmp = realloc(list, sizeof(char *) * new_capacity);
-
-			if(tmp == NULL) {
-				status = -1;
-				goto out;
-			}
-
-			list = tmp;
-			capacity = new_capacity;
-		}
-
-		list[c_line] = strndup(entries->d_name, entrie_s);
-
-		list[++c_line] = NULL;
 	}
 
 	if(c_line == 0) {
@@ -160,7 +131,7 @@ struct loader_entries *list_loader_entries(char *BOOT, char *entry_token)
 out:
 	free(path_to_files);
 	free(prefix);
-	closedir(dir);
+	free_file_list(files, counts);
 
 	struct loader_entries *entrie_list;
 	entrie_list = malloc(sizeof(struct loader_entries));
