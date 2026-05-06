@@ -246,11 +246,22 @@ out:
 	return ret;
 }
 
+void free_file_list(char **const p, size_t counts) {
+
+	for(size_t i = 0; i < counts; i++) free(p[i]);
+
+	free(p);
+}
+
 char **list_files(const char *path, size_t *const count)
 {
 	char **files = NULL;
 	DIR *dir = NULL;
 	int status;
+
+	struct dirent *file;
+	size_t capacity = 5;
+	size_t count_file = 0;
 
 	dir = opendir(path);
 
@@ -260,16 +271,16 @@ char **list_files(const char *path, size_t *const count)
 		goto out;
 	}
 
-	struct dirent *file;
-	size_t capacity = 5;
-	size_t count_file = 0;
+	files = malloc(sizeof(char *) * capacity);
 
 	while((file = readdir(dir)) != NULL) {
+
+		if(strncmp(file->d_name, ".", 1) == 0) continue;
 
 		if(count_file >= capacity - 1) {
 			size_t new_capacity = capacity * 2;
 			char **tmp = NULL;
-			tmp = realloc(files, new_capacity);
+			tmp = realloc(files, sizeof(char *) * new_capacity);
 			if(tmp == NULL) {
 				status = -1;
 				goto out;
@@ -296,9 +307,7 @@ out:
 	closedir(dir);
 
 	if(status == -1) {
-		for(size_t i = 0; i < count_file; i++) free(files[i]);
-
-		free(files);
+		free_file_list(files, count_file);
 	}
 	*count = count_file;
 	return files;
