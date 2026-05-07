@@ -441,7 +441,7 @@ int clean(int argc , char **argv) {
 	entries = list_loader_entries(boot_path, entry_token);
 
 	if(entries->counts == 0) {
-		printf("No loader entry to remove\n");
+		printf("No loader entrie to remove\n");
 		ret = 0;
 		goto out;
 	}
@@ -467,7 +467,7 @@ int clean(int argc , char **argv) {
 	}
 
 	if(entry_del_count == 0) {
-		printf("no loader entry to remove\n");
+		printf("no loader entrie to remove\n");
 		ret = 0;
 		goto out;
 	}
@@ -519,7 +519,7 @@ clean_all:
 	}
 
 	if(entries->counts == 0) {
-		printf("No entry to delete\n");
+		printf("No entrie to delete\n");
 		ret = 0;
 		goto out;
 	}
