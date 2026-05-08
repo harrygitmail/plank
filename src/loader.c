@@ -6,8 +6,10 @@
 #include "btrfs.h"
 #include "loader.h"
 #include "common.h"
+#include "kernel.h"
 #include <sys/types.h>
 #include <dirent.h>
+#include <time.h>
 
 
 
@@ -141,7 +143,25 @@ out:
 
 	return entrie_list;
 }
+static inline void update_entrie_status(int found_kern,
+	int found_snap, entry_status *status) {
 
+	switch (found_kern + found_snap) {
+	case 2:
+		*status = ENTRY_OK;
+		break;
+	default:
+		*status = ENTRY_DELETE_PENDING;
+	}
+
+}
+
+static inline int is_time_same(struct timespec t1, struct timespec t2)
+{
+	if(t1.tv_sec == t2.tv_sec) return 0;
+
+	return 1;
+}
 void link_loader_entries(
 	const kernel_list *kern_list,
 	const struct snapshot_list *snap_list,
@@ -154,39 +174,54 @@ void link_loader_entries(
 
 	for(size_t i = 0; i < entries->counts; i++) {
 		int found_kern = 0;
-		int snap_found = 0;
+		int found_snap = 0;
 
 		get_ker_ver_snap_tim(
 			entries->entrie[i].file_name,
 			tmp_kern_ver,
 			&temp_snap_struct.snapshot_time);
 
-		for(size_t j = 0; j < kern_list->counts; j++) {
-			if((strcmp(kern_list->list[j].kernel_ver, tmp_kern_ver)) == 0) {
+		for (size_t j = 0; j < kern_list->counts; j++) {
+
+			char *comp_1 = kern_list->list[j].kernel_ver;
+			char *comp_2 = tmp_kern_ver;
+
+			if (strcmp(comp_1, comp_2) == 0) {
+
 				found_kern = 1;
-				entries->entrie[entrie_c].kern = &kern_list->list[j];
+
+				struct kernel_ver *this;
+				this = &kern_list->list[j];
+
+				entries->entrie[entrie_c].kern = this;
+
 				break;
 			}
 
 		}
 
-		for(size_t k = 0; k < snap_list->counts; k++) {
-			if(
-				temp_snap_struct.snapshot_time.tv_sec ==
-				snap_list->list[k].snapshot_time.tv_sec
-			  ) {
-				snap_found = 1;
-				entries->entrie[entrie_c].snap = &snap_list->list[k];
+		for (size_t k = 0; k < snap_list->counts; k++) {
+
+			int c;
+			c = is_time_same(
+				snap_list->list[k].snapshot_time,
+				temp_snap_struct.snapshot_time);
+
+			if (c == 0 ) {
+
+				found_snap = 1;
+
+				snapshot_info *this;
+				this = &snap_list->list[k];
+
+				entries->entrie[entrie_c].snap = this;
+
 				break;
 			}
 		}
 
-		if(found_kern == 1 && snap_found == 1) {
-			entries->entrie[entrie_c++].status = ENTRY_OK;
-		} else {
-			entries->entrie[entrie_c++].status = ENTRY_DELETE_PENDING;
-		}
-
+		update_entrie_status(found_kern,
+			found_snap, &entries->entrie[entrie_c++].status);
 	}
 
 	entries->counts = entrie_c;
