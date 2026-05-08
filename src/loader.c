@@ -79,7 +79,7 @@ out:
 struct loader_entries *list_loader_entries(char *BOOT, char *entry_token)
 {
 	char *path_to_files = NULL;
-	char **list = NULL;
+	struct loader_entrie *entries = NULL;
 	char *prefix = NULL;
 	char **files = NULL;
 
@@ -91,7 +91,7 @@ struct loader_entries *list_loader_entries(char *BOOT, char *entry_token)
 
 	nread = asprintf(&path_to_files, "%s/loader/entries", BOOT);
 	if(nread == -1) {
-		list = NULL;
+		entries = NULL;
 		status = -1;
 		goto out;
 	}
@@ -99,7 +99,7 @@ struct loader_entries *list_loader_entries(char *BOOT, char *entry_token)
 	nread = asprintf(&prefix, "snapshot-%s", entry_token);
 
 	if(nread == -1) {
-		list = NULL;
+		entries = NULL;
 		status = -1;
 		goto out;
 	}
@@ -108,7 +108,7 @@ struct loader_entries *list_loader_entries(char *BOOT, char *entry_token)
 
 	files = list_files(path_to_files, &counts);
 
-	list = malloc(sizeof(char *) * counts);
+	entries = malloc(sizeof(struct loader_entrie) * counts);
 
 	for (size_t i = 0; i < counts; i++) {
 
@@ -116,13 +116,13 @@ struct loader_entries *list_loader_entries(char *BOOT, char *entry_token)
 
 		if (c != 0) continue;
 
-		list[c_line++] = strdup(files[i]);
+		entries[c_line++].file_name = strdup(files[i]);
 
 	}
 
 	if(c_line == 0) {
-		free(list);
-		list = NULL;
+		free(entries);
+		entries = NULL;
 		status = 0;
 		goto out;
 	}
@@ -135,23 +135,19 @@ out:
 
 	struct loader_entries *entrie_list;
 	entrie_list = malloc(sizeof(struct loader_entries));
-	entrie_list->list = list;
+	entrie_list->entrie = entries;
 	entrie_list->counts = c_line;
 	entrie_list->status = status;
 
 	return entrie_list;
 }
 
-struct loader_entrie *link_loader_entries(
-	kernel_list *kern_list,
-	struct snapshot_list *snap_list,
-	struct loader_entries *entries)
+void link_loader_entries(
+	const kernel_list *kern_list,
+	const struct snapshot_list *snap_list,
+	struct loader_entries *const entries)
 {
-	struct loader_entrie *ret;
 	size_t entrie_c = 0;
-
-	ret = malloc(sizeof(struct loader_entrie) * entries->counts);
-	if(ret == NULL) goto out;
 
 	snapshot_info temp_snap_struct;
 	char tmp_kern_ver[65];
@@ -161,14 +157,14 @@ struct loader_entrie *link_loader_entries(
 		int snap_found = 0;
 
 		get_ker_ver_snap_tim(
-			entries->list[i],
+			entries->entrie[i].file_name,
 			tmp_kern_ver,
 			&temp_snap_struct.snapshot_time);
 
 		for(size_t j = 0; j < kern_list->counts; j++) {
 			if((strcmp(kern_list->list[j].kernel_ver, tmp_kern_ver)) == 0) {
 				found_kern = 1;
-				ret[entrie_c].kern = &kern_list->list[j];
+				entries->entrie[entrie_c].kern = &kern_list->list[j];
 				break;
 			}
 
@@ -180,23 +176,19 @@ struct loader_entrie *link_loader_entries(
 				snap_list->list[k].snapshot_time.tv_sec
 			  ) {
 				snap_found = 1;
-				ret[entrie_c].snap = &snap_list->list[k];
+				entries->entrie[entrie_c].snap = &snap_list->list[k];
 				break;
 			}
 		}
 
 		if(found_kern == 1 && snap_found == 1) {
-			ret[entrie_c].file_name = entries->list[i];
-			ret[entrie_c++].status = ENTRY_OK;
+			entries->entrie[entrie_c++].status = ENTRY_OK;
 		} else {
-			ret[entrie_c].file_name = entries->list[i];
-			ret[entrie_c++].status = ENTRY_DELETE_PENDING;
+			entries->entrie[entrie_c++].status = ENTRY_DELETE_PENDING;
 		}
 
 	}
 
-	ret->counts = entrie_c;
+	entries->counts = entrie_c;
 
-out:
-	return ret;
 }

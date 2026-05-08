@@ -395,7 +395,6 @@ out:
 
 int clean(int argc , char **argv) {
 	enum plank_status ret;
-	int len;
 	int tar_subvol_fd;
 
 	kernel_list host;
@@ -403,8 +402,6 @@ int clean(int argc , char **argv) {
 	struct snapshot_list tar_subvol_snap_info;
 	tar_subvol_snap_info.list = NULL;
 	struct loader_entries *entries = NULL;
-
-	struct loader_entrie *entrie = NULL;
 
 	char *entry_token = NULL;
 	char *boot_path = NULL;
@@ -452,17 +449,17 @@ int clean(int argc , char **argv) {
 		goto out;
 	}
 
-	entrie = link_loader_entries(&host, &tar_subvol_snap_info, entries);
+	link_loader_entries(&host, &tar_subvol_snap_info, entries);
 
 	size_t entry_del_count = 0;
-	list_to_delete = malloc(sizeof(char *) * entrie->counts);
+	list_to_delete = malloc(sizeof(char *) * entries->counts);
 
-	for(size_t p = 0; p < entrie->counts; p++) {
-		if(entrie[p].status == ENTRY_DELETE_PENDING) {
+	for(size_t p = 0; p < entries->counts; p++) {
+		if(entries->entrie[p].status == ENTRY_DELETE_PENDING) {
 			asprintf(&list_to_delete[entry_del_count++],
 				"%s/loader/entries/%s",
 				boot_path,
-				entrie[p].file_name);
+				entries->entrie[p].file_name);
 		}
 	}
 
@@ -532,7 +529,7 @@ clean_all:
 
 	asprintf(&path_to_file, "%s/loader/entries/%s",
 			boot_path,
-			entries->list[i]);
+			entries->entrie[i].file_name);
 
 	printf("%s\n", path_to_file);
 	unlink(path_to_file);
@@ -549,16 +546,15 @@ out:
 
 	if(entries != NULL) {
 		for(size_t i = 0; i < entries->counts; i++)
-			free(entries->list[i]);
-		free(entries->list);
+			free(entries->entrie[i].file_name);
+		free(entries->entrie);
 	}
-	free(entrie);
+	free(entries);
 	if(list_to_delete != NULL)
 		for(size_t i = 0; i < entry_del_count; i++)
 			free(list_to_delete[i]);
 
 	free(list_to_delete);
-	free(entries);
 
 	return ret;
 }
@@ -602,7 +598,7 @@ int show_entrie(int argc, char **argv)
 just_list:
 
 	for (size_t i = 0; i < entries->counts; i++) {
-		printf("%s\n", entries->list[i]);
+		printf("%s\n", entries->entrie[i].file_name);
 	}
 
 	status = 0;
@@ -612,10 +608,10 @@ exit:
 
 	if(entries != NULL) {
 		for(size_t i = 0; i < entries->counts; i++)
-			free(entries->list[i]);
+			free(entries->entrie[i].file_name);
 	}
 
-	free(entries->list);
+	free(entries->entrie);
 	free(entries);
 
 	return status;

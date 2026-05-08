@@ -33,7 +33,7 @@ char **read_conf_file(FILE *file);
  */
 
 struct loader_entries {
-	char **list;
+	struct loader_entrie *entrie;
 	size_t counts;
 	int status;
 };
@@ -49,13 +49,12 @@ struct loader_entrie {
 	struct kernel_ver *kern;
 	snapshot_info *snap;
 	entry_status status;
-	size_t counts;
 
 };
 
-struct loader_entrie *link_loader_entries(
-	kernel_list *kern_list,
-	struct snapshot_list *snap_list,
-	struct loader_entries *entries);
+void link_loader_entries(
+	const kernel_list *kern_list,
+	const struct snapshot_list *snap_list,
+	struct loader_entries *const entries);
 
 struct loader_entries *list_loader_entries(char *BOOT, char *entry_token);
