@@ -108,7 +108,7 @@ struct loader_entries *list_loader_entries(const char *BOOT, const char *entry_t
 
 	prefix_lenght = strlen(prefix);
 
-	files = list_files(path_to_files, &counts);
+	files = list_files(path_to_files, 0,  &counts);
 
 	entries = malloc(sizeof(struct loader_entrie) * counts);
 

@@ -55,7 +55,7 @@ int show_host_info(int argc, char **argv)
 
 	printf("pretty name: %s\n", pretty_name);
 
-	ret = get_kernel_list(&host);
+	ret = get_kernel_list(&host, "/");
 
 	for(size_t i = 0; i < host.counts; i++) {
 		printf("kernel version: %s found\n", host.list[i].kernel_ver);
@@ -127,7 +127,7 @@ int make_entrie(int argc, char **argv)
 
 	if(ret != plank_OK) goto out;
 
-	ret = get_kernel_list(&host);
+	ret = get_kernel_list(&host, "/");
 
 	if(ret != plank_OK) goto out;
 	
@@ -421,7 +421,7 @@ int clean(int argc , char **argv) {
 		goto clean_all;
 	}
 
-	ret = get_kernel_list(&host);
+	ret = get_kernel_list(&host, "/");
 	if(ret == plank_err) goto out;
 
 	ret = get_entry_token(&entry_token);

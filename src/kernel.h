@@ -30,6 +30,6 @@ typedef struct {
  * possible solution could be to check exsistance of Linux kernel image in that 
  * folder but it may make one function doing lots of work.
  */
-enum plank_status get_kernel_list(kernel_list *ret);
+enum plank_status get_kernel_list(kernel_list *const ret, const char *root);
 
 kernel_list *kernel_diff(const kernel_list *k1, const kernel_list *k2);

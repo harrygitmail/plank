@@ -1,17 +1,22 @@
 #include "btrfs.h"
 #include "kernel.h"
 #include <dirent.h>
+#include <fcntl.h>
 #include <stddef.h>
 #include <sys/types.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "common.h"
 
-enum plank_status get_kernel_list(kernel_list *ret)
+enum plank_status get_kernel_list(kernel_list *const ret, const char *root)
 {
+	int root_fd = open(root, O_RDONLY);
+	if(root_fd < 0 ) return plank_err;
+
 	char *kernel_lib = "/lib/modules";
 	size_t counts = 0;
-	char **list = list_files(kernel_lib, &counts);
+	char **list = list_files(kernel_lib, root_fd, &counts);
 
 	ret->list = malloc(sizeof(struct kernel_ver) * counts);
 	for(size_t i = 0; i < counts; i++) {
@@ -22,6 +27,7 @@ enum plank_status get_kernel_list(kernel_list *ret)
 
 	ret->counts = counts;
 	free_file_list(list, counts);
+	close(root_fd);
 
 	return plank_OK;
 }
