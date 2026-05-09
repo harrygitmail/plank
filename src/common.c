@@ -253,17 +253,30 @@ void free_file_list(char **const p, size_t counts) {
 	free(p);
 }
 
-char **list_files(const char *path, size_t *const count)
+char **list_files(const char *path, int dirfd, size_t *const count)
 {
 	char **files = NULL;
 	DIR *dir = NULL;
 	int status;
+	int path_fd = 0;
 
 	struct dirent *file;
 	size_t capacity = 5;
 	size_t count_file = 0;
 
-	dir = opendir(path);
+	if (dirfd == 0 ) {
+		dir = opendir(path);
+
+	} else {
+		path_fd = openat(dirfd, path, O_RDONLY);
+
+		if (path_fd < 0) {
+			status = - 1;
+			goto out;
+		}
+
+		dir = fdopendir(path_fd);
+	}
 
 	if(dir == NULL) {
 		files = NULL;
@@ -304,6 +317,10 @@ char **list_files(const char *path, size_t *const count)
 	status = 0;
 
 out:
+	if (dirfd != 0 && path_fd <! 0) {
+		close(path_fd);
+	}
+
 	closedir(dir);
 
 	if(status == -1) {

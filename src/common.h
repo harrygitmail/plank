@@ -50,7 +50,11 @@ enum plank_status get_ker_ver_snap_tim(
 	char *file_name,
 	char *kernel_ver,
 	struct timespec *tm);
-
-char **list_files(const char *path, size_t  *const count);
+/*
+ * list_files - give list of files at given @path
+ * if dirfd is non-zero then path resolution will happen relative to
+ * dirfd and it will return list of files.
+ */
+char **list_files(const char *path, int dirfd, size_t  *const count);
 
 void free_file_list(char **const p, size_t counts);
