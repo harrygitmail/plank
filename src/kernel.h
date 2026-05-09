@@ -31,3 +31,5 @@ typedef struct {
  * folder but it may make one function doing lots of work.
  */
 enum plank_status get_kernel_list(kernel_list *ret);
+
+kernel_list *kernel_diff(const kernel_list *k1, const kernel_list *k2);
