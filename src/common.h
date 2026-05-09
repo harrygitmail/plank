@@ -17,7 +17,7 @@ enum plank_status get_entry_token(char **ret);
  * @ret: pointer to pretty name string. 
  */
 
-enum plank_status get_value_by_key(char **ret, char *target);
+enum plank_status get_value_by_key(char **ret, const char *target);
 
 /*get_host_uuid - get uuid of root filesystem
  *

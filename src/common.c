@@ -83,7 +83,7 @@ out:
 	return f_ret;
 }
 
-enum plank_status get_value_by_key(char **ret, char *target)
+enum plank_status get_value_by_key(char **ret, const char *target)
 {
 	FILE *os_release = fopen("/etc/os-release", "r");
 	int c;

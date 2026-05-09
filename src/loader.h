@@ -24,7 +24,7 @@ typedef struct {
 
 } loader_entry_w;
 
-char **read_conf_file(FILE *file);
+char **read_file(FILE *file);
 
 /*list_loader_entries - store list of loader entries and its releted info
  * @ilst : pointer to list.
@@ -57,4 +57,4 @@ void link_loader_entries(
 	const struct snapshot_list *snap_list,
 	struct loader_entries *const entries);
 
-struct loader_entries *list_loader_entries(char *BOOT, char *entry_token);
+struct loader_entries *list_loader_entries(const char *BOOT,const char *entry_token);

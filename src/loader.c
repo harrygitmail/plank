@@ -13,7 +13,7 @@
 
 
 
-char **read_conf_file(FILE *file)
+char **read_file(FILE *file)
 {
 
 	char *buffer = NULL;
@@ -78,7 +78,7 @@ out:
 	return lines;
 }
 
-struct loader_entries *list_loader_entries(char *BOOT, char *entry_token)
+struct loader_entries *list_loader_entries(const char *BOOT, const char *entry_token)
 {
 	char *path_to_files = NULL;
 	struct loader_entrie *entries = NULL;
