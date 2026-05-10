@@ -6,6 +6,7 @@
 #include "common.h"
 #include "kernel.h"
 #include "loader.h"
+#include "plank.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,76 +17,68 @@
 
 int show_host_info(int argc, char **argv)
 {
-	
-	int my_root_fd;
-	enum plank_status ret;
-	
-	struct snapshot_list root_snapshot_info;
-	root_snapshot_info.list = NULL;
+	struct system_info info;
+	int status = 0;
 
-	char *entry_token = NULL;
-	char *pretty_name = NULL;
-	kernel_list host;
-	host.list = NULL;
-	char *host_uuid = NULL;
-	char *boot_path = NULL;
+	info = get_system_info(SYS_INFO_SHOW);
 
-	my_root_fd = open("/", O_RDONLY);
-
-	ret = get_snapshot_list(my_root_fd, &root_snapshot_info);
-
-	if(ret == plank_NO_SNAPSHOT_FOUND) {
-		printf("no snapshot found\n");
-		free(root_snapshot_info.list);
-		return 0;
-	}
-
-	if(ret != plank_OK) goto out;
-
-	for(size_t i = 0; i < root_snapshot_info.counts; i++) {
-
-		printf(
-			"snapshot id: %" PRIu64 "\n", 
-			root_snapshot_info.list[i].snapshot_id);
-	}
-	ret = get_entry_token(&entry_token);
-
-	printf("entry token: %s\n", entry_token);
-	ret = get_value_by_key(&pretty_name, "PRETTY_NAME");
-
-	printf("pretty name: %s\n", pretty_name);
-
-	ret = get_kernel_list(&host, "/");
-
-	for(size_t i = 0; i < host.counts; i++) {
-		printf("kernel version: %s found\n", host.list[i].kernel_ver);
-	}
-	ret = get_host_uuid(&host_uuid);
-	printf("host UUID: %s\n", host_uuid);
-	ret = get_boot_path(&boot_path);
-
-	if( ret == plank_err) {
-		ret = 4;
+	if (info.status == plank_err) {
+		fprintf(stderr, "something went wrong!!\n");
+		status = info.status;
 		goto out;
 	}
 
-	if(ret == plank_boot_not_found) {
-		printf("$BOOT not found on its usual location:\n"
-				"\t/efi /boot /boot/efi \n");
+	if (info.status == plank_boot_not_found) {
+		fprintf(stderr, "Unable to find $BOOT. is it mounted corectly ?\n");
+		status = info.status;
 		goto out;
 	}
 
-	printf("path to $BOOT : %s\n", boot_path);
+	if (info.status == plank_NO_SNAPSHOT_FOUND) {
+		fprintf(stdout, "NO snapshot found\n\n");
+		goto show_kern;
+	}
 
+	printf("following snapshot found\n");
+
+	for (size_t i = 0; i < info.system.snap.counts; i++) {
+		printf("\t%" PRIu64 "\n", info.system.snap.list[i].snapshot_id);
+	}
+
+	printf("\n");
+
+show_kern:
+
+	if (info.system.kern.counts == 0) {
+		fprintf(stdout, "NO kernel found\n\n");
+		goto show_next;
+	}
+
+	printf("-----------------------------------------------\n");
+	printf("following kernel found\n");
+
+	for (size_t i = 0; i < info.system.kern.counts; i++) {
+		printf("\t%s\n", info.system.kern.list[i].kernel_ver);
+	}
+
+	printf("\n");
+
+
+show_next:
+
+	printf("----------------------------------------------\n");
+	printf("system info:\n\n");
+
+	printf("entry-token: %s\n", info.system.entry_token);
+	printf("$BOOT: %s\n", info.system.boot_path);
+	printf("pretty name: %s\n", info.os_release.pretty_name);
+	printf("ID: %s\n", info.os_release.id);
+	printf("UUID: %s", info.system.uuid);
+
+	
 out:
-	free(host.list);
-	free(entry_token);
-	free(pretty_name);
-	free(host_uuid);
-	free(boot_path);
-	free(root_snapshot_info.list);
-	
-	return ret;
+	free_system_info(info, SYS_INFO_SHOW);
+	return status;
 }
 
 int make_entrie(int argc, char **argv)
