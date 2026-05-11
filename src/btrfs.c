@@ -83,10 +83,19 @@ enum plank_status get_snapshot_list(
 
 	btrfs_util_destroy_subvolume_iterator(tar_subvol_iter);
 
-	if (n == 0) return plank_NO_SNAPSHOT_FOUND;
+	if (n == 0) return PLANK_NO_SNAPSHOT_FOUND;
 
 	ret->counts = n;
 
-	return plank_OK;
+	return PLANK_OK;
 }
 
+char **get_subvol_path(uint64_t id, int fd) {
+	char **path = NULL;
+	enum btrfs_util_error btrfs_err;
+
+	btrfs_err = btrfs_util_subvolume_get_path_fd(fd, id, path);
+	if(btrfs_err != BTRFS_UTIL_OK) return NULL;
+
+	return path;
+}
