@@ -19,16 +19,6 @@ enum plank_status get_entry_token(char **ret);
 
 enum plank_status get_value_by_key(char **ret, const char *target);
 
-/*get_host_uuid - get uuid of root filesystem
- *
- * @ret: pointer to uuid string.
- *
- * this function have some worse error handlling and return status reporting.
- * eyes needed. 
- */
-
-enum plank_status get_host_uuid(char **ret);
-
 /* get_boot_path - get path to $BOOT
  *
  * @ret: pointer to path string.
