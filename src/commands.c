@@ -22,19 +22,19 @@ int show_host_info(int argc, char **argv)
 
 	info = get_system_info(SYS_INFO_SHOW);
 
-	if (info.status == plank_err) {
+	if (info.status == PLANK_ERR) {
 		fprintf(stderr, "something went wrong!!\n");
 		status = info.status;
 		goto out;
 	}
 
-	if (info.status == plank_boot_not_found) {
+	if (info.status == PLANK_BOOT_NOT_FOUND) {
 		fprintf(stderr, "Unable to find $BOOT. is it mounted corectly ?\n");
 		status = info.status;
 		goto out;
 	}
 
-	if (info.status == plank_NO_SNAPSHOT_FOUND) {
+	if (info.status == PLANK_NO_SNAPSHOT_FOUND) {
 		fprintf(stdout, "NO snapshot found\n\n");
 		goto show_kern;
 	}
@@ -112,41 +112,41 @@ int make_entrie(int argc, char **argv)
 
 	ret = get_snapshot_list(tar_subvol_fd, &tar_subvol_snap_info);
 
-	if(ret == plank_NO_SNAPSHOT_FOUND) {
+	if(ret == PLANK_NO_SNAPSHOT_FOUND) {
 		printf("NO snapshot found\n");
 		ret = 0;
 		goto out;
 	}
 
-	if(ret != plank_OK) goto out;
+	if(ret != PLANK_OK) goto out;
 
 	ret = get_kernel_list(&host, "/");
 
-	if(ret != plank_OK) goto out;
+	if(ret != PLANK_OK) goto out;
 	
 	ret = get_entry_token(&entry_token);
-	if(ret == plank_err) goto out;
+	if(ret == PLANK_ERR) goto out;
 
 	ret = get_boot_path(&boot_path);
 
-	if(ret == plank_boot_not_found) {
+	if(ret == PLANK_BOOT_NOT_FOUND) {
 		fprintf(stderr, "unable to find $BOOT is it correctly mounted?\n");
 		goto out;
 	}
 
 	ret = get_host_uuid(&host_uuid);
 
-	if(ret == plank_err) goto out;
+	if(ret == PLANK_ERR) goto out;
 
 	/* lets use default values if parsing os-release gives
 	 * any error.
 	 */
 
 	ret = get_value_by_key(&pretty_name, "PRETTY_NAME");
-	if(ret == plank_err) pretty_name = strdup("Linux");
+	if(ret == PLANK_ERR) pretty_name = strdup("Linux");
 
 	ret = get_value_by_key(&id, "ID");
-	if(ret == plank_err) id = strdup("linux");
+	if(ret == PLANK_ERR) id = strdup("linux");
 	
 	
 	size_t capacity = 6;
@@ -218,7 +218,7 @@ int make_entrie(int argc, char **argv)
 
 
 			if(len == -1) {
-				ret = plank_err;
+				ret = PLANK_ERR;
 				goto clean_up_temp_fel;
 			}
 
@@ -265,7 +265,7 @@ clean_up_temp_fel:
 			free(version);
 
 			if(len == -1) {
-				ret = plank_err;
+				ret = PLANK_ERR;
 				continue;
 			}
 
@@ -409,25 +409,25 @@ int clean(int argc , char **argv) {
 
 	ret = get_snapshot_list(tar_subvol_fd, &tar_subvol_snap_info);
 
-	if(ret == plank_NO_SNAPSHOT_FOUND) {
+	if(ret == PLANK_NO_SNAPSHOT_FOUND) {
 		printf("no snapshot found\n");
 		goto clean_all;
 	}
 
 	ret = get_kernel_list(&host, "/");
-	if(ret == plank_err) goto out;
+	if(ret == PLANK_ERR) goto out;
 
 	ret = get_entry_token(&entry_token);
-	if(ret == plank_err) goto out;
+	if(ret == PLANK_ERR) goto out;
 
 	ret = get_boot_path(&boot_path);
-	if(ret == plank_boot_not_found) {
+	if(ret == PLANK_BOOT_NOT_FOUND) {
 		printf("unable to find $BOOT. is it mounted correctly ?\n");
 		ret = 2;
 		goto out;
 	}
 
-	if(ret == plank_err) goto out;
+	if(ret == PLANK_ERR) goto out;
 	entries = list_loader_entries(boot_path, entry_token);
 
 	if(entries->counts == 0) {
@@ -490,15 +490,15 @@ int clean(int argc , char **argv) {
 clean_all:
 
 	ret = get_entry_token(&entry_token);
-	if(ret == plank_err) goto out;
+	if(ret == PLANK_ERR) goto out;
 
 	ret = get_boot_path(&boot_path);
-	if(ret == plank_boot_not_found) {
+	if(ret == PLANK_BOOT_NOT_FOUND) {
 		printf("unable to find $BOOT. is it mounted correctly ?\n");
 		goto out;
 	}
 
-	if(ret == plank_err) goto out;
+	if(ret == PLANK_ERR) goto out;
 
 	entries = list_loader_entries(boot_path, entry_token);
 
@@ -562,14 +562,14 @@ int show_entrie(int argc, char **argv)
 	enum plank_status ret;
 	ret = get_entry_token(&entry_token);
 
-	if(ret != plank_OK) {
+	if(ret != PLANK_OK) {
 		status = 2;
 		goto exit;
 	}
 
 	ret = get_boot_path(&path_to_boot);
 	
-	if(ret != plank_OK) {
+	if(ret != PLANK_OK) {
 		status = 2;
 		goto exit;
 	}

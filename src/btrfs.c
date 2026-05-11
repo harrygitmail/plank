@@ -1,4 +1,4 @@
-#include "btrfs.h"
+#include "plank.h"
 #include <btrfsutil.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -14,15 +14,15 @@ enum plank_status get_snapshot_list(
 
 	switch(B_ret) {
 	case BTRFS_UTIL_OK: break;
-	case BTRFS_UTIL_ERROR_NOT_SUBVOLUME: return plank_btrfs_util_err_NOT_SUBVOLUME;
-	case BTRFS_UTIL_ERROR_NOT_BTRFS: return plank_btrfs_util_err_NOT_BTRFS;
-	default: return plank_btrfs_util_err;
+	case BTRFS_UTIL_ERROR_NOT_SUBVOLUME: return PLANK_BTRFS_UTIL_ERR_NOT_SUBVOLUME;
+	case BTRFS_UTIL_ERROR_NOT_BTRFS: return PLANK_BTRFS_UTIL_ERR_NOT_BTRFS;
+	default: return PLANK_BTRFS_UTIL_ERR;
 	}
 
 	struct btrfs_util_subvolume_info tar_subvol_info;
 	B_ret = btrfs_util_subvolume_get_info_fd(tar_subvol_fd, 0, &tar_subvol_info);
 
-	if(B_ret != BTRFS_UTIL_OK) return plank_btrfs_util_err;
+	if(B_ret != BTRFS_UTIL_OK) return PLANK_BTRFS_UTIL_ERR;
 
 	struct btrfs_util_subvolume_iterator *tar_subvol_iter;
 
@@ -30,7 +30,7 @@ enum plank_status get_snapshot_list(
 
 	switch(B_ret) {
 	case BTRFS_UTIL_OK: break;
-	default: return plank_btrfs_util_err;
+	default: return PLANK_BTRFS_UTIL_ERR;
 	}
 
 	char *path;
@@ -41,7 +41,7 @@ enum plank_status get_snapshot_list(
 
 	ret->list = malloc(sizeof(snapshot_info) * capacity);
 
-	if (ret->list == NULL) return plank_err;
+	if (ret->list == NULL) return PLANK_MEM_ERR;
 
 	while((B_ret = btrfs_util_subvolume_iter_next_info(
 		tar_subvol_iter,
@@ -66,7 +66,7 @@ enum plank_status get_snapshot_list(
 				ret->list,
 				sizeof(snapshot_info) * new_capacity);
 
-			if(temp == NULL) return plank_err;
+			if(temp == NULL) return PLANK_MEM_ERR;
 
 			ret->list = temp;
 			capacity = new_capacity;

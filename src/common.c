@@ -9,7 +9,7 @@
 #include <string.h>
 #include <libmount/libmount.h>
 #include <blkid/blkid.h>
-#include "btrfs.h"
+#include "plank.h"
 
 static int find_ld_etr(int fd, unsigned int depth_count) {
 
@@ -49,7 +49,7 @@ static int find_ld_etr(int fd, unsigned int depth_count) {
 
 enum plank_status get_entry_token(char **ret)
 {
-	enum plank_status f_ret = plank_OK;
+	enum plank_status f_ret = PLANK_OK;
 
 	FILE *machine_id = fopen("/etc/machine-id", "r");
 	int c;
@@ -63,7 +63,7 @@ enum plank_status get_entry_token(char **ret)
 		buffer[n] = 0;
 
 		if(n > 1024) {
-			f_ret = plank_err;
+			f_ret = PLANK_ERR;
 			goto out;
 		}
 	}
@@ -71,7 +71,7 @@ enum plank_status get_entry_token(char **ret)
 	 *ret = malloc(strlen(buffer) + 1);
 
 	 if(*ret == NULL) {
-		 f_ret = plank_err;
+		 f_ret = PLANK_ERR;
 		 goto out;
 	 }
 
@@ -210,14 +210,14 @@ enum plank_status get_boot_path(char **ret)
 
 			*ret = malloc(strlen(path_to_look[e]) + 1);
 			strcpy(*ret, path_to_look[e]);
-			return plank_OK;
+			return PLANK_OK;
 		}
 
 		if(p == 1) continue;
 
 	}
 
-	return plank_boot_not_found;
+	return PLANK_BOOT_NOT_FOUND;
 }
 
 enum plank_status get_ker_ver_snap_tim(
@@ -225,7 +225,7 @@ enum plank_status get_ker_ver_snap_tim(
 	char *kernel_ver,
 	struct timespec *tm)
 {
-	enum plank_status ret = plank_OK;
+	enum plank_status ret = PLANK_OK;
 	char *target = strdup(file_name);
 	char *machine_id_start = strchr(target, '-') + 1;
 	char *kernel_ver_start = strchr(machine_id_start, '-') + 1;

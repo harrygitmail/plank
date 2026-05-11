@@ -8,11 +8,12 @@
 #include <string.h>
 #include <unistd.h>
 #include "common.h"
+#include "plank.h"
 
 enum plank_status get_kernel_list(kernel_list *const ret, const char *root)
 {
 	int root_fd = open(root, O_RDONLY);
-	if(root_fd < 0 ) return plank_err;
+	if(root_fd < 0 ) return PLANK_ERR;
 
 	char *kernel_lib = "/lib/modules";
 	size_t counts = 0;
@@ -29,7 +30,7 @@ enum plank_status get_kernel_list(kernel_list *const ret, const char *root)
 	free_file_list(list, counts);
 	close(root_fd);
 
-	return plank_OK;
+	return PLANK_OK;
 }
 
 kernel_list *kernel_diff(const kernel_list *k1, const kernel_list *k2)

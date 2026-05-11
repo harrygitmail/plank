@@ -7,6 +7,7 @@
 #include "loader.h"
 #include "common.h"
 #include "kernel.h"
+#include "plank.h"
 #include <sys/types.h>
 #include <dirent.h>
 #include <time.h>
@@ -19,7 +20,7 @@ char **read_file(FILE *file)
 	char *buffer = NULL;
 	char **lines = NULL;
 
-	enum plank_status ret = plank_OK;
+	enum plank_status ret = PLANK_OK;
 	
 	size_t line_count = 6;
 	size_t c_line = 0;
@@ -37,7 +38,7 @@ char **read_file(FILE *file)
 			new_line_count = line_count * 2;
 			tmp = realloc(lines, new_line_count * sizeof(char *));
 			if(tmp == NULL) {
-				ret = plank_mem_err; 
+				ret = PLANK_MEM_ERR;
 				goto out;
 			}
 
@@ -65,7 +66,7 @@ char **read_file(FILE *file)
 		
 
 out:
-	if(ret == plank_mem_err) {
+	if(ret == PLANK_MEM_ERR) {
 		for(size_t i = 0; i < c_line; i++) free(lines[i]);
 
 		free(lines);
