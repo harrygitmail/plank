@@ -2,6 +2,19 @@
 #include "kernel.h"
 #include "loader.h"
 
+
+enum plank_status {
+	PLANK_OK,
+	PLANK_NO_SNAPSHOT_FOUND,
+	PLANK_BTRFS_UTIL_ERR,
+	PLANK_BTRFS_UTIL_ERR_NOT_BTRFS,
+	PLANK_BTRFS_UTIL_ERR_NOT_SUBVOLUME,
+	PLANK_ERR,
+	PLANK_MEM_ERR,
+	PLANK_BOOT_NOT_FOUND,
+	PLANK_NO_ENTRY,
+};
+
 struct system_info {
 
 	struct {

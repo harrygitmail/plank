@@ -29,18 +29,6 @@ struct snapshot_list {
 	size_t counts;
 };
 
-enum plank_status {
-	plank_OK,
-	plank_NO_SNAPSHOT_FOUND,
-	plank_btrfs_util_err,
-	plank_btrfs_util_err_NOT_BTRFS,
-	plank_btrfs_util_err_NOT_SUBVOLUME,
-	plank_err,
-	plank_mem_err,
-	plank_boot_not_found,
-	plank_NO_ENTRY,
-};
-
 /* get_snapshot_list - get list of snapshot_info 
  * @tar_subvol_fd: fd of opened path that point to target subvolume.
  * @ret: pointer to snapshot_info.
