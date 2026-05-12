@@ -37,37 +37,37 @@ struct system_info get_system_info(int type)
 	enum plank_status ret;
 
 	ret = get_entry_token(&entry_token);
-	if (ret == plank_err) goto out;
+	if (ret == PLANK_ERR) goto out;
 
 	ret_info.system.entry_token = entry_token;
 
 	ret = get_boot_path(&boot_path);
-	if (ret == plank_boot_not_found) goto out;
+	if (ret == PLANK_BOOT_NOT_FOUND) goto out;
 
 	ret_info.system.boot_path = boot_path;
 
 	switch (type) {
 	case SYS_INFO_SHOW:
 		ret = get_value_by_key(&pretty_name, "PRETTY_NAME");
-		if (ret == plank_err) goto out;
+		if (ret == PLANK_ERR) goto out;
 
 		ret = get_value_by_key(&id, "ID");
-		if (ret == plank_err) goto out;
+		if (ret == PLANK_ERR) goto out;
 
 		ret = get_kernel_list(&kern, "/");
-		if (ret == plank_err) goto out;
+		if (ret == PLANK_ERR) goto out;
 
 		tar_subvol_fd = open("/", O_RDONLY);
 		if (tar_subvol_fd < 0) {
-			ret = plank_err;
+			ret = PLANK_ERR;
 			goto out;
 		}
 
 		ret = get_snapshot_list(tar_subvol_fd, &snap);
-		if (ret == plank_err) goto out;
+		if (ret == PLANK_ERR) goto out;
 
 		ret = get_host_uuid(&uuid);
-		if (ret == plank_err) goto out;
+		if (ret == PLANK_ERR) goto out;
 
 		ret_info.os_release.pretty_name = pretty_name;
 		ret_info.os_release.id = id;
