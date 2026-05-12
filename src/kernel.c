@@ -19,6 +19,7 @@ enum plank_status get_kernel_list(kernel_list *const ret, const char *root)
 	char **list = list_files(kernel_lib, root_fd, &counts);
 
 	ret->list = malloc(sizeof(struct kernel_ver) * counts);
+
 	for(size_t i = 0; i < counts; i++) {
 
 		strcpy(ret->list[i].kernel_ver, list[i]);

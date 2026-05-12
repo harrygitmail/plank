@@ -30,13 +30,19 @@ int show_host_info(int argc, char **argv)
 		goto out;
 	}
 
+	if (info.status == PLANK_MNT_ERR) {
+		fprintf(stderr, "libmount operation failed!\n");
+		status = info.status;
+		goto out;
+	}
+
 	if (info.status == PLANK_BOOT_NOT_FOUND) {
 		fprintf(stderr, "Unable to find $BOOT. is it mounted corectly ?\n");
 		status = info.status;
 		goto out;
 	}
 
-	if (info.status == PLANK_NO_SNAPSHOT_FOUND) {
+	if (info.status == PLANK_BTRFS_NO_SNAPSHOT_FOUND) {
 		fprintf(stdout, "NO snapshot found\n\n");
 		goto show_kern;
 	}
@@ -75,7 +81,7 @@ show_next:
 	printf("$BOOT: 		%s\n", info.system.boot_path);
 	printf("pretty name:	%s\n", info.os_release.pretty_name);
 	printf("ID: 		%s\n", info.os_release.id);
-	printf("UUID: 		%s", info.system.uuid);
+	printf("UUID: 		%s", info.system.mount_info.uuid);
 
 	
 out:
@@ -135,8 +141,6 @@ int make_entrie(int argc, char **argv)
 		fprintf(stderr, "unable to find $BOOT is it correctly mounted?\n");
 		goto out;
 	}
-
-	ret = get_host_uuid(&host_uuid);
 
 	if(ret == PLANK_ERR) goto out;
 

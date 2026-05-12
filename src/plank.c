@@ -1,7 +1,6 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <string.h>
 #include "btrfs.h"
 #include "common.h"
 #include "kernel.h"
@@ -13,7 +12,6 @@ struct system_info get_system_info(int type)
 {
 	char *entry_token = NULL;
 	char *boot_path = NULL;
-	char *uuid = NULL;
 	char *pretty_name = NULL;
 	char *id = NULL;
 
@@ -31,6 +29,8 @@ struct system_info get_system_info(int type)
 	entries.entrie = NULL;
 	entries.counts = 0;
 	entries.status = 0;
+
+	struct system_mount_info mount_info;
 
 	struct system_info ret_info;
 
@@ -66,14 +66,17 @@ struct system_info get_system_info(int type)
 		ret = get_snapshot_list(tar_subvol_fd, &snap);
 		if (ret == PLANK_ERR) goto out;
 
-		ret = get_host_uuid(&uuid);
-		if (ret == PLANK_ERR) goto out;
+		ret = get_mount_info(SYS_MNT_UUID, &mount_info);
+		if (ret == PLANK_ERR) {
+			ret = PLANK_MNT_ERR;
+			goto out;
+		}
 
 		ret_info.os_release.pretty_name = pretty_name;
 		ret_info.os_release.id = id;
 		ret_info.system.snap = snap;
 		ret_info.system.kern = kern;
-		strcpy(ret_info.system.uuid, uuid);
+		ret_info.system.mount_info = mount_info;
 
 		break;
 	}
@@ -81,8 +84,6 @@ struct system_info get_system_info(int type)
 
 out:
 	if(tar_subvol_fd <! 0 ) close(tar_subvol_fd);
-
-	free(uuid);
 
 	ret_info.status = ret;
 	return ret_info;
