@@ -6,6 +6,16 @@
 #include "types.h"
 #include "btrfs.h"
 
+enum plank_status map_btfs_to_plank(enum btrfs_util_error btrfs_err)
+{
+	switch (btrfs_err) {
+	case BTRFS_UTIL_ERROR_NOT_SUBVOLUME:
+		return PLANK_BTRFS_ERR_NOT_SUBVOLUME; break;
+	case BTRFS_UTIL_ERROR_NOT_BTRFS:
+		return PLANK_BTRFS_ERR_NOT_BTRFS; break;
+	}
+}
+
 enum plank_status get_snapshot_list(
 	int tar_subvol_fd,
 	struct snapshot_list *ret)
