@@ -71,11 +71,11 @@ show_next:
 	printf("----------------------------------------------\n");
 	printf("system info:\n\n");
 
-	printf("entry-token: %s\n", info.system.entry_token);
-	printf("$BOOT: %s\n", info.system.boot_path);
-	printf("pretty name: %s\n", info.os_release.pretty_name);
-	printf("ID: %s\n", info.os_release.id);
-	printf("UUID: %s", info.system.uuid);
+	printf("entry-token: 	%s\n", info.system.entry_token);
+	printf("$BOOT: 		%s\n", info.system.boot_path);
+	printf("pretty name:	%s\n", info.os_release.pretty_name);
+	printf("ID: 		%s\n", info.os_release.id);
+	printf("UUID: 		%s", info.system.uuid);
 
 	
 out:
