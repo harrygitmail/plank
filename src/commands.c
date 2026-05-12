@@ -2,11 +2,13 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <fcntl.h>
-#include "btrfs.h"
 #include "common.h"
 #include "kernel.h"
 #include "loader.h"
 #include "plank.h"
+#include "mount.h"
+#include "types.h"
+#include "btrfs.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>

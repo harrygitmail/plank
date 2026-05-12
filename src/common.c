@@ -9,7 +9,8 @@
 #include <string.h>
 #include <libmount/libmount.h>
 #include <blkid/blkid.h>
-#include "plank.h"
+#include "types.h"
+#include "common.h"
 
 static int find_ld_etr(int fd, unsigned int depth_count) {
 

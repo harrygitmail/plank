@@ -1,5 +1,6 @@
 #pragma once
-#include "btrfs.h"
+#include <types.h>
+
 /* kernel_list - store version string of Linux kernel
  *
  * @kernel_ver: hold version string
@@ -8,17 +9,6 @@
  * for most system today its enought unless our binary 
  * running on 1991 toaster or a custom NASA space-probe
  */
-
-struct kernel_ver {
-	char kernel_ver[65];
-};
-
-#include <stddef.h>
-typedef struct {
-	struct kernel_ver *list;
-	size_t counts;
-
-} kernel_list;
 
 /* get_kernel_list - get list of kernel installed on system
  *

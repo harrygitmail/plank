@@ -1,5 +1,3 @@
-#include "btrfs.h"
-#include "kernel.h"
 #include <dirent.h>
 #include <fcntl.h>
 #include <stddef.h>
@@ -8,7 +6,8 @@
 #include <string.h>
 #include <unistd.h>
 #include "common.h"
-#include "plank.h"
+#include "types.h"
+#include "kernel.h"
 
 enum plank_status get_kernel_list(kernel_list *const ret, const char *root)
 {

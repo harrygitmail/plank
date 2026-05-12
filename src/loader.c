@@ -3,14 +3,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "btrfs.h"
-#include "loader.h"
-#include "common.h"
-#include "kernel.h"
-#include "plank.h"
 #include <sys/types.h>
 #include <dirent.h>
 #include <time.h>
+#include "types.h"
+#include "common.h"
 
 
 

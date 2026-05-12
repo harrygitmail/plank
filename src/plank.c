@@ -1,10 +1,13 @@
-#include "plank.h"
-#include "btrfs.h"
-#include "common.h"
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include "btrfs.h"
+#include "common.h"
+#include "kernel.h"
+#include "types.h"
+#include "plank.h"
+#include "mount.h"
 
 struct system_info get_system_info(int type)
 {

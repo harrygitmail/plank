@@ -1,7 +1,6 @@
 #pragma once
-#include <inttypes.h>
 #include <time.h>
-#include "btrfs.h"
+#include "types.h"
 
 /* get_entry_token - get entry token from host system.
  * 

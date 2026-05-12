@@ -1,9 +1,10 @@
-#include "plank.h"
 #include <btrfsutil.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "types.h"
+#include "btrfs.h"
 
 enum plank_status get_snapshot_list(
 	int tar_subvol_fd,

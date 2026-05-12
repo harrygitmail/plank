@@ -1,7 +1,5 @@
 #pragma once
-#include <stddef.h>
-#include <time.h>
-#include <inttypes.h>
+#include "types.h"
 
 /* NOTE:- 
  * snapshot in btrfs filesystem are also subvolume with initial share content 
@@ -12,22 +10,6 @@
  * move subvolume by path. thats why subvolume ID are more portable option 
  * than PATH(which can be changed by user later)
  */
-
-/*
- * struct snapshot_info - store btrfs snapshot info 
- * @snapshot_time: time when subvolume was created
- * @snapshot_id: ID of snapshot. 
- */
-
-typedef struct {
-	uint64_t snapshot_id;
-	struct timespec snapshot_time;
-} snapshot_info;
-
-struct snapshot_list {
-	snapshot_info *list;
-	size_t counts;
-};
 
 /* get_snapshot_list - get list of snapshot_info 
  * @tar_subvol_fd: fd of opened path that point to target subvolume.

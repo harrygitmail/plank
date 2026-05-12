@@ -1,48 +1,5 @@
-#include "btrfs.h"
-#include "kernel.h"
-#include "loader.h"
-
-
-enum plank_status {
-	PLANK_OK,
-	PLANK_NO_SNAPSHOT_FOUND,
-	PLANK_BTRFS_UTIL_ERR,
-	PLANK_BTRFS_UTIL_ERR_NOT_BTRFS,
-	PLANK_BTRFS_UTIL_ERR_NOT_SUBVOLUME,
-	PLANK_ERR,
-	PLANK_MEM_ERR,
-	PLANK_BOOT_NOT_FOUND,
-	PLANK_NO_ENTRY,
-};
-
-struct system_info {
-
-	struct {
-
-		char *entry_token;
-		char *boot_path;
-		kernel_list kern;
-		struct snapshot_list snap;
-		char uuid[37];
-
-	} system;
-
-	struct {
-
-		char *pretty_name;
-		char *id;
-
-	} os_release;
-
-	struct {
-
-		struct loader_entries entries;
-
-	} loader;
-
-	enum plank_status status;
-
-};
+#pragma once
+#include "types.h"
 
 #define SYS_INFO_SHOW		1
 #define SYS_INFO_WRITE		2
