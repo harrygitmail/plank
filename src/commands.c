@@ -114,7 +114,7 @@ int make_entrie(int argc, char **argv)
 
 	ret = get_snapshot_list(tar_subvol_fd, &tar_subvol_snap_info);
 
-	if(ret == PLANK_NO_SNAPSHOT_FOUND) {
+	if(ret == PLANK_BTRFS_NO_SNAPSHOT_FOUND) {
 		printf("NO snapshot found\n");
 		ret = 0;
 		goto out;
@@ -411,7 +411,7 @@ int clean(int argc , char **argv) {
 
 	ret = get_snapshot_list(tar_subvol_fd, &tar_subvol_snap_info);
 
-	if(ret == PLANK_NO_SNAPSHOT_FOUND) {
+	if(ret == PLANK_BTRFS_NO_SNAPSHOT_FOUND) {
 		printf("no snapshot found\n");
 		goto clean_all;
 	}
