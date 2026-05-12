@@ -25,15 +25,17 @@ enum plank_status get_snapshot_list(
 
 	switch(B_ret) {
 	case BTRFS_UTIL_OK: break;
-	case BTRFS_UTIL_ERROR_NOT_SUBVOLUME: return PLANK_BTRFS_UTIL_ERR_NOT_SUBVOLUME;
-	case BTRFS_UTIL_ERROR_NOT_BTRFS: return PLANK_BTRFS_UTIL_ERR_NOT_BTRFS;
-	default: return PLANK_BTRFS_UTIL_ERR;
+	case BTRFS_UTIL_ERROR_NOT_SUBVOLUME:
+		return map_btfs_to_plank(BTRFS_UTIL_ERROR_NOT_SUBVOLUME);
+	case BTRFS_UTIL_ERROR_NOT_BTRFS:
+		return map_btfs_to_plank(BTRFS_UTIL_ERROR_NOT_BTRFS);
+	default: return PLANK_BTRFS_ERR;
 	}
 
 	struct btrfs_util_subvolume_info tar_subvol_info;
 	B_ret = btrfs_util_subvolume_get_info_fd(tar_subvol_fd, 0, &tar_subvol_info);
 
-	if(B_ret != BTRFS_UTIL_OK) return PLANK_BTRFS_UTIL_ERR;
+	if(B_ret != BTRFS_UTIL_OK) return PLANK_BTRFS_ERR;
 
 	struct btrfs_util_subvolume_iterator *tar_subvol_iter;
 
