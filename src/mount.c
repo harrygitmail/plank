@@ -3,8 +3,8 @@
 #include <libmount.h>
 #include <sys/stat.h>
 #include <stdlib.h>
+#include <string.h>
 #include "mount.h"
-#include "plank.h"
 
 enum plank_status get_host_uuid(char **ret)
 {
@@ -24,21 +24,21 @@ enum plank_status get_host_uuid(char **ret)
 		MNT_ITER_BACKWARD);
 
 	if( fs == NULL) {
-		f_ret = plank_err;
+		f_ret = PLANK_ERR;
 		goto out;
 	}
 
 	const char *devname = mnt_fs_get_srcpath(fs);
 
 	if(devname == NULL) {
-		f_ret = plank_err;
+		f_ret = PLANK_ERR;
 		goto out;
 	}
 
 	pr = blkid_new_probe_from_filename(devname);
 
 	if(pr == NULL) {
-		f_ret = plank_err;
+		f_ret = PLANK_ERR;
 		goto out;
 	}
 
@@ -47,7 +47,7 @@ enum plank_status get_host_uuid(char **ret)
 	ret_tmp = blkid_do_safeprobe(pr);
 
 	if(ret_tmp != 0) {
-		f_ret = plank_err;
+		f_ret = PLANK_ERR;
 		goto out;
 	}
 
@@ -57,7 +57,7 @@ enum plank_status get_host_uuid(char **ret)
 		pr, "UUID", &target_uuid, NULL);
 
 	if(ret_tmp == -1) {
-		f_ret = plank_err;
+		f_ret = PLANK_ERR;
 		goto out;
 	}
 
