@@ -69,6 +69,17 @@ struct loader_entries {
 	int status;
 };
 
+#define SYS_MNT_UUID 	1
+#define SYS_MNT_SOURCE	2
+
+struct system_mount_info {
+	int type;
+	union {
+		char uuid[37];
+		char *source;
+	};
+};
+
 struct system_info {
 
 	struct {
@@ -77,7 +88,7 @@ struct system_info {
 		char *boot_path;
 		kernel_list kern;
 		struct snapshot_list snap;
-		char uuid[37];
+		struct system_mount_info mount_info;
 
 	} system;
 
