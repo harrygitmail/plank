@@ -79,6 +79,40 @@ struct system_info get_system_info(int type)
 		ret_info.system.mount_info = mount_info;
 
 		break;
+
+	case SYS_INFO_WRITE:
+		ret = get_value_by_key(&pretty_name, "PRETTY_NAME");
+		if (ret == PLANK_ERR) goto out;
+
+		ret = get_value_by_key(&id, "ID");
+		if (ret == PLANK_ERR) goto out;
+
+		ret = get_kernel_list(&kern, "/");
+		if (ret == PLANK_ERR) goto out;
+
+		tar_subvol_fd = open("/", O_RDONLY);
+		if (tar_subvol_fd < 0) {
+			ret = PLANK_ERR;
+			goto out;
+		}
+
+		ret = get_snapshot_list(tar_subvol_fd, &snap);
+		if (ret == PLANK_ERR) goto out;
+
+		ret = get_mount_info(SYS_MNT_UUID, &mount_info);
+		if (ret == PLANK_ERR) {
+			ret = PLANK_MNT_ERR;
+			goto out;
+		}
+
+		ret_info.os_release.pretty_name = pretty_name;
+		ret_info.os_release.id = id;
+		ret_info.system.snap = snap;
+		ret_info.system.kern = kern;
+		ret_info.system.mount_info = mount_info;
+
+		break;
+
 	}
 
 
@@ -96,12 +130,18 @@ void free_system_info(struct system_info info, int type)
 
 	switch (type) {
 	case SYS_INFO_SHOW:
-
 		free(info.os_release.pretty_name);
 		free(info.os_release.id);
 		free(info.system.kern.list);
 		free(info.system.snap.list);
-
 		break;
+
+	case SYS_INFO_WRITE:
+		free(info.os_release.pretty_name);
+		free(info.os_release.id);
+		free(info.system.kern.list);
+		free(info.system.snap.list);
+		break;
+
 	}
 }
