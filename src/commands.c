@@ -91,87 +91,56 @@ out:
 
 int make_entrie(int argc, char **argv)
 {
-	struct snapshot_list tar_subvol_snap_info;
-	tar_subvol_snap_info.list = NULL;
-	loader_entry_w *host_loader = NULL;
-	kernel_list host;
-	host.list = NULL;
-
-	char *pretty_name = NULL;
-	char *entry_token = NULL;
-	char *boot_path = NULL;
-	char *host_uuid = NULL;
-	char *id = NULL;
 	const char *entry_type = "# Boot Loader Specification type #1 entry";
 	const char *warning = "# File created by 'plank' and may not work";
 	
-
-	enum plank_status ret;
-
 	int len;
+	int status = 0;
 
-	int tar_subvol_fd;
-	tar_subvol_fd = open("/", O_RDONLY);
+	struct system_info info;
+	loader_entry_w *host_loader = NULL;
 
-	if( tar_subvol_fd == -1 ) {
-		ret = -1;
+	info = get_system_info(SYS_INFO_WRITE);
+
+	if (info.status == PLANK_ERR) {
+		fprintf(stderr, "something went wrong!!\n");
+		status = info.status;
 		goto out;
 	}
 
-	ret = get_snapshot_list(tar_subvol_fd, &tar_subvol_snap_info);
-
-	if(ret == PLANK_BTRFS_NO_SNAPSHOT_FOUND) {
-		printf("NO snapshot found\n");
-		ret = 0;
+	if (info.status == PLANK_MNT_ERR) {
+		fprintf(stderr, "libmount operation failed!\n");
+		status = info.status;
 		goto out;
 	}
 
-	if(ret != PLANK_OK) goto out;
-
-	ret = get_kernel_list(&host, "/");
-
-	if(ret != PLANK_OK) goto out;
-	
-	ret = get_entry_token(&entry_token);
-	if(ret == PLANK_ERR) goto out;
-
-	ret = get_boot_path(&boot_path);
-
-	if(ret == PLANK_BOOT_NOT_FOUND) {
-		fprintf(stderr, "unable to find $BOOT is it correctly mounted?\n");
+	if (info.status == PLANK_BOOT_NOT_FOUND) {
+		fprintf(stderr, "Unable to find $BOOT. is it mounted corectly ?\n");
+		status = info.status;
 		goto out;
 	}
 
-	if(ret == PLANK_ERR) goto out;
-
-	/* lets use default values if parsing os-release gives
-	 * any error.
-	 */
-
-	ret = get_value_by_key(&pretty_name, "PRETTY_NAME");
-	if(ret == PLANK_ERR) pretty_name = strdup("Linux");
-
-	ret = get_value_by_key(&id, "ID");
-	if(ret == PLANK_ERR) id = strdup("linux");
-	
-	
+	if (info.status == PLANK_BTRFS_NO_SNAPSHOT_FOUND) {
+		fprintf(stdout, "NO snapshot found\n\n");
+		goto out;
+	}
 	size_t capacity = 6;
 	size_t n = 0;
 
 	host_loader = malloc(sizeof(loader_entry_w) * capacity);
 
-	for(size_t i = 0; i < tar_subvol_snap_info.counts; i++) {
+	for(size_t i = 0; i < info.system.snap.counts; i++) {
 
 		struct tm t;
 		char date_time[32];
 
 		localtime_r(
-			&tar_subvol_snap_info.list[i].snapshot_time.tv_sec,
+			&info.system.snap.list[i].snapshot_time.tv_sec,
 			&t);
 
 		strftime(date_time, sizeof(date_time), "%Y-%m-%d %H:%M:%S", &t);
 
-		for (size_t y = 0; y < host.counts; y++) {
+		for (size_t y = 0; y < info.system.kern.counts; y++) {
 			if(n > capacity) {
 				size_t new_capacity = capacity * 2;
 				loader_entry_w *tmp = realloc(host_loader, new_capacity);
@@ -191,40 +160,39 @@ int make_entrie(int argc, char **argv)
 			char *version = NULL;
 
 			len = asprintf(&filename, "snapshot-%s-%s-%ld.conf",
-					entry_token, 
-					host.list[y].kernel_ver,
-					tar_subvol_snap_info.list[i].snapshot_time.tv_sec);
+					info.system.entry_token,
+					info.system.kern.list[y].kernel_ver,
+					info.system.snap.list[i].snapshot_time.tv_sec);
 
 			len = asprintf(&title, "snapshot %s %s %s",
-					pretty_name,
+					info.os_release.pretty_name,
 					date_time,
-					host.list[y].kernel_ver);
+					info.system.kern.list[y].kernel_ver);
 
 			len = asprintf(&sort_key, "%s-%s",
-					id,
-					host.list[y].kernel_ver);
+					info.os_release.id,
+					info.system.kern.list[y].kernel_ver);
 
 			len = asprintf(&path_to_kernel, "/%s/%s/linux",
-					entry_token,
-					host.list[y].kernel_ver);
+					info.system.entry_token,
+					info.system.kern.list[y].kernel_ver);
 
 			len = asprintf(&path_to_initrd, "/%s/%s/initrd",
-					entry_token,
-					host.list[y].kernel_ver);
+					info.system.entry_token,
+					info.system.kern.list[y].kernel_ver);
 
-			len = asprintf(&options, "root=UUID=%s rw rootflags=subvolid=%" PRIu64 
+			len = asprintf(&options, "root=UUID=%s rw rootflags=subvolid=%" PRIu64
 					" loglevel=3 quiet systemd.machine_id=%s",
-					host_uuid, 
-					tar_subvol_snap_info.list[i].snapshot_id,
-					entry_token);
+					info.system.mount_info.uuid,
+					info.system.snap.list[i].snapshot_id,
+					info.system.entry_token);
 			
 			len = asprintf(&version, "%s",
-					host.list[y].kernel_ver);
+					info.system.kern.list[y].kernel_ver);
 
 
 
 			if(len == -1) {
-				ret = PLANK_ERR;
 				goto clean_up_temp_fel;
 			}
 
@@ -247,7 +215,7 @@ int make_entrie(int argc, char **argv)
 					version);
 
 			len = asprintf(&f_machine_id, "machine-id %s",
-					entry_token);
+					info.system.entry_token);
 
 			len = asprintf(&f_sort_key, "sort-key   %s",
 					sort_key);
@@ -271,7 +239,6 @@ clean_up_temp_fel:
 			free(version);
 
 			if(len == -1) {
-				ret = PLANK_ERR;
 				continue;
 			}
 
@@ -298,7 +265,7 @@ clean_up_temp_fel:
 		char *path_to_file = NULL;
 
 		len = asprintf(&path_to_file, "%s/loader/entries/%s",
-				boot_path,
+				info.system.boot_path,
 				host_loader[p].filename);
 
 		if(len == -1) goto write_out;
@@ -376,20 +343,10 @@ write_out:
 		
 	}
 out:
-	
-	free(tar_subvol_snap_info.list);
+	free_system_info(info, SYS_INFO_WRITE);
 	free(host_loader);
-	free(host.list);
 
-	free(boot_path);
-	free(pretty_name);
-	free(id);
-	free(entry_token);
-	free(host_uuid);
-
-	if(tar_subvol_fd != -1) close(tar_subvol_fd);
-
-	return ret;
+	return status;
 }
 
 int clean(int argc , char **argv) {
