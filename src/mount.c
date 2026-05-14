@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <stdlib.h>
+#include <error.h>
 #include "mount.h"
 #include "types.h"
 
@@ -43,7 +44,6 @@ enum plank_status get_mount_info(
 	struct system_mount_info *ret)
 {
 	enum plank_status f_ret = PLANK_OK;
-	int ret_tmp;
 
 	struct libmnt_fs *fs = NULL;
 	char *source = NULL;
@@ -106,4 +106,70 @@ out:
 	free(target_uuid);
 
 	return f_ret;
+}
+
+enum plank_status mount_top_subvol(
+	struct system_mount_info mount_info,
+	const char *target)
+{
+	int err;
+	struct libmnt_context *mount_context = NULL;
+	char *str_uuid = NULL;
+
+	enum plank_status ret = PLANK_OK;
+
+	const char *mount_options = "ro,subvolid=5";
+	mount_context = mnt_new_context();
+
+	if (mount_info.type == SYS_MNT_UUID) {
+		err = asprintf(&str_uuid, "UUID=%s", mount_info.uuid);
+
+		if (err == -1) {
+			ret = PLANK_MEM_ERR;
+			goto out;
+		}
+
+		err = mnt_context_set_source(mount_context, str_uuid);
+
+		if (err < 0) {
+			ret = PLANK_LIBMOUNT_ERR;
+			goto out;
+		}
+
+	} else {
+
+		err = mnt_context_set_source(mount_context, mount_info.source);
+
+		if (err < 0) {
+			ret = PLANK_LIBMOUNT_ERR;
+			goto out;
+		}
+
+	}
+
+	err = mnt_context_set_target(mount_context, target);
+
+	if (err < 0) {
+		ret = PLANK_LIBMOUNT_ERR;
+		goto out;
+	}
+
+	err = mnt_context_set_options(mount_context, mount_options);
+
+	if (err < 0) {
+		ret = PLANK_LIBMOUNT_ERR;
+		goto out;
+	}
+
+	err = mnt_context_mount(mount_context);
+
+	if (err != 0) {
+		ret = PLANK_LIBMOUNT_ERR;
+		goto out;
+	}
+
+out:
+	mnt_free_context(mount_context);
+	free(str_uuid);
+	return ret;
 }
