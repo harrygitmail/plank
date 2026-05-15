@@ -68,7 +68,7 @@ struct system_info get_system_info(int type)
 
 		ret = get_mount_info(SYS_MNT_UUID, &mount_info);
 		if (ret == PLANK_ERR) {
-			ret = PLANK_MNT_ERR;
+			ret = PLANK_LIBMOUNT_ERR;
 			goto out;
 		}
 
@@ -101,7 +101,7 @@ struct system_info get_system_info(int type)
 
 		ret = get_mount_info(SYS_MNT_UUID, &mount_info);
 		if (ret == PLANK_ERR) {
-			ret = PLANK_MNT_ERR;
+			ret = PLANK_LIBMOUNT_ERR;
 			goto out;
 		}
 
