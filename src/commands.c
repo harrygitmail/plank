@@ -9,6 +9,7 @@
 #include "mount.h"
 #include "types.h"
 #include "btrfs.h"
+#include "write.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,7 +31,7 @@ int show_host_info(int argc, char **argv)
 		goto out;
 	}
 
-	if (info.status == PLANK_MNT_ERR) {
+	if (info.status == PLANK_LIBMOUNT_ERR) {
 		fprintf(stderr, "libmount operation failed!\n");
 		status = info.status;
 		goto out;
@@ -91,8 +92,6 @@ out:
 
 int make_entrie(int argc, char **argv)
 {
-	const char *entry_type = "# Boot Loader Specification type #1 entry";
-	const char *warning = "# File created by 'plank' and may not work";
 	
 	int len;
 	int status = 0;
@@ -108,7 +107,7 @@ int make_entrie(int argc, char **argv)
 		goto out;
 	}
 
-	if (info.status == PLANK_MNT_ERR) {
+	if (info.status == PLANK_LIBMOUNT_ERR) {
 		fprintf(stderr, "libmount operation failed!\n");
 		status = info.status;
 		goto out;
@@ -191,66 +190,15 @@ int make_entrie(int argc, char **argv)
 					info.system.kern.list[y].kernel_ver);
 
 
-
-			if(len == -1) {
-				goto clean_up_temp_fel;
-			}
-
-			char *f_filename = NULL;
-			char *f_title = NULL;
-			char *f_version = NULL;
-			char *f_machine_id = NULL;
-			char *f_sort_key = NULL;
-			char *f_linux = NULL;
-			char *f_initrd = NULL;
-			char *f_options = NULL;
-
-			len = asprintf(&f_filename, "%s",
-					filename);
-
-			len = asprintf(&f_title,"title      %s",
-					title);
+			host_loader[n].filename = filename;
+			host_loader[n].title = title;
+			host_loader[n].version = version;
+			host_loader[n].machine_id = info.system.entry_token;
+			host_loader[n].sort_key = sort_key;
+			host_loader[n].options = options;
+			host_loader[n].kernel = path_to_kernel;
+			host_loader[n].initrd = path_to_initrd;
 			
-			len = asprintf(&f_version, "version    %s",
-					version);
-
-			len = asprintf(&f_machine_id, "machine-id %s",
-					info.system.entry_token);
-
-			len = asprintf(&f_sort_key, "sort-key   %s",
-					sort_key);
-
-			len = asprintf(&f_linux, "linux      %s",
-					path_to_kernel);
-
-			len = asprintf(&f_initrd, "initrd     %s",
-					path_to_initrd);
-
-			len = asprintf(&f_options, "options    %s",
-					options);
-
-clean_up_temp_fel:
-			free(filename);
-			free(title);
-			free(sort_key);
-			free(path_to_kernel);
-			free(path_to_initrd);
-			free(options);
-			free(version);
-
-			if(len == -1) {
-				continue;
-			}
-
-			host_loader[n].filename = f_filename;
-			host_loader[n].title = f_title;
-			host_loader[n].version = f_version;
-			host_loader[n].machine_id = f_machine_id;
-			host_loader[n].sort_key = f_sort_key;
-			host_loader[n].kernel = f_linux;
-			host_loader[n].initrd = f_initrd;
-			host_loader[n].options = f_options;
-
 			n++;
 			host_loader[n].filename = NULL;
 
@@ -258,6 +206,7 @@ clean_up_temp_fel:
 	}
 
 	int p;
+	enum plank_status write_status;
 	
 	for(p = 0; ; p++) {
 		if(host_loader[p].filename == NULL) break;
@@ -268,79 +217,26 @@ clean_up_temp_fel:
 				info.system.boot_path,
 				host_loader[p].filename);
 
-		if(len == -1) goto write_out;
+		if (len == -1) goto out;
 
-	
 		FILE *file = fopen(path_to_file, "w");
 
-		fwrite(entry_type, strlen(entry_type), 1, file);
+		write_status = write_entrie(&host_loader[p], file);
 
-		fwrite("\n", 1, 1, file);
+		if (write_status != PLANK_OK)
+			goto out;
 
-		fwrite(warning, strlen(warning), 1, file);
-
-		fwrite("\n", 1, 1, file);
-		
-		fwrite(host_loader[p].title,
-				strlen(host_loader[p].title), 1, file);
-
-		fwrite("\n", 1, 1, file);
-
-		fwrite(host_loader[p].version, 
-				strlen(host_loader[p].version),
-				1,
-				file);
-
-		fwrite("\n", 1, 1, file);
-
-		fwrite(host_loader[p].machine_id, 
-				strlen(host_loader[p].machine_id),
-				1,
-				file);
-
-		fwrite("\n", 1, 1, file);
-	
-		fwrite(host_loader[p].sort_key, 
-				strlen(host_loader[p].sort_key),
-				1, 
-				file);
-
-		fwrite("\n", 1, 1, file);
-
-		fwrite(host_loader[p].kernel,
-				strlen(host_loader[p].kernel),
-				1,
-				file);
-
-		fwrite("\n", 1, 1, file);
-
-		fwrite(host_loader[p].initrd,
-				strlen(host_loader[p].initrd),
-				1,
-				file);
-
-		fwrite("\n", 1, 1, file);
-
-		fwrite(host_loader[p].options,
-				strlen(host_loader[p].options),
-				1,
-				file);
-
-		fwrite("\n", 1, 1, file);
-
-write_out:
-		free(path_to_file);
 		fclose(file);
 
 		free(host_loader[p].filename);
 		free(host_loader[p].title);
 		free(host_loader[p].version);
-		free(host_loader[p].machine_id);
 		free(host_loader[p].sort_key);
+		free(host_loader[p].options);
 		free(host_loader[p].kernel);
 		free(host_loader[p].initrd);
-		free(host_loader[p].options);
-		
+
+		free(path_to_file);
 	}
 out:
 	free_system_info(info, SYS_INFO_WRITE);
