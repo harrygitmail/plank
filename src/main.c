@@ -14,6 +14,7 @@ command commands[] = {
 	{"make-entrie", make_entrie},
 	{"clean", clean},
 	{"show-entrie", show_entrie},
+	{"check", check},
 	{NULL,NULL}
 };
 

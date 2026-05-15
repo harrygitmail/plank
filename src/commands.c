@@ -572,3 +572,125 @@ exit:
 
 	return status;
 }
+
+int check(int argc, char **argv)
+{
+	struct system_info info;
+	int status = 0;
+	char **subvol_paths = NULL;
+	char **snap_relative_path = NULL;
+	kernel_list **kern_list_array = NULL;
+
+	info = get_system_info(SYS_INFO_SHOW);
+
+	if (info.status == PLANK_ERR) {
+		fprintf(stderr, "something went wrong!!\n");
+		status = info.status;
+		goto out;
+	}
+
+	if (info.status == PLANK_LIBMOUNT_ERR) {
+		fprintf(stderr, "libmount operation failed!\n");
+		status = info.status;
+		goto out;
+	}
+
+	if (info.status == PLANK_BOOT_NOT_FOUND) {
+		fprintf(stderr, "Unable to find $BOOT. is it mounted corectly ?\n");
+		status = info.status;
+		goto out;
+	}
+
+	if (info.status == PLANK_BTRFS_NO_SNAPSHOT_FOUND) {
+		fprintf(stdout, "NO snapshot found\n\n");
+		goto out;
+	}
+
+	enum plank_status ret ;
+
+	ret = mount_top_subvol(info.system.mount_info, "/mnt");
+
+	if (ret != PLANK_OK) {
+		fprintf(stderr, "something went wrong");
+		goto out;
+	}
+
+	size_t capacity = info.system.snap.counts;
+
+	subvol_paths = malloc(sizeof(char *) * capacity);
+	kern_list_array = malloc(sizeof(kernel_list *) * capacity);
+	snap_relative_path = malloc(sizeof(char *) * capacity);
+
+	int fd = open("/mnt", O_RDONLY);
+	if (fd < 0) goto out;
+
+	for (size_t i = 0; i < info.system.snap.counts; i++) {
+		kern_list_array[i] = malloc(sizeof(kernel_list));
+
+		snap_relative_path[i] = get_subvol_path(
+			info.system.snap.list[i].snapshot_id,
+			fd);
+
+		asprintf(&subvol_paths[i], "/mnt/%s",
+			snap_relative_path[i]);
+
+		get_kernel_list(kern_list_array[i], subvol_paths[i]);
+
+	}
+
+	for (size_t i = 0; i < capacity; i++) {
+		printf("snapshot id: %" PRIu64 "\n",
+			info.system.snap.list[i].snapshot_id);
+
+		printf("snapshot path: %s\n",
+			snap_relative_path[i]);
+
+		kernel_list *k = NULL;
+
+		k = kernel_diff(&info.system.kern, kern_list_array[i]);
+
+		if (k->list == NULL) {
+			printf("No kernel mistmatch found for this snapshot\n");
+			printf("\n");
+			free(k);
+			continue;
+		}
+
+		printf("kernel mismatch found !!\n");
+		printf("missing kernel:\n");
+
+		for (size_t j = 0; j < k->counts; j++)
+			printf("\t%s\n", k->list[j].kernel_ver);
+
+		printf("\n");
+		printf("kernel present on snapshot:\n");
+
+		for (size_t x = 0; x < kern_list_array[i]->counts; x++)
+			printf("\t%s\n", kern_list_array[i]->list[x].kernel_ver);
+
+
+		free(k->list);
+		free(k);
+
+		printf("\n");
+
+	}
+
+out:
+	free_system_info(info, SYS_INFO_SHOW);
+	for (size_t i = 0; i < info.system.snap.counts; i++) {
+		free(subvol_paths[i]);
+		free(snap_relative_path[i]);
+
+		free(kern_list_array[i]->list);
+
+		free(kern_list_array[i]);
+	}
+
+	free(subvol_paths);
+	free(kern_list_array);
+	free(snap_relative_path);
+
+	if (fd <! 0) close(fd);
+	return status;
+}
