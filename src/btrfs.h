@@ -26,3 +26,5 @@
 enum plank_status get_snapshot_list(
 	int tar_subvol_fd, 
 	struct snapshot_list *ret);
+
+char *get_subvol_path(uint64_t id, int fd);

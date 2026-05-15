@@ -103,11 +103,11 @@ enum plank_status get_snapshot_list(
 	return PLANK_OK;
 }
 
-char **get_subvol_path(uint64_t id, int fd) {
-	char **path = NULL;
+char *get_subvol_path(uint64_t id, int fd) {
+	char *path = NULL;
 	enum btrfs_util_error btrfs_err;
 
-	btrfs_err = btrfs_util_subvolume_get_path_fd(fd, id, path);
+	btrfs_err = btrfs_util_subvolume_get_path_fd(fd, id, &path);
 	if(btrfs_err != BTRFS_UTIL_OK) return NULL;
 
 	return path;
