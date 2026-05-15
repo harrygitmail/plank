@@ -22,11 +22,12 @@ void usage()
 {
 
 	printf("plank is in initial stage of development.\n"
-		"please do not use it on your system.\n"
-		"show-host-info: to show info about host\n"
-		"make-entrie: to make systemd-boot entrie\n"
-		"clean: to remove unneccesary entrie\n"
-		"show-entrie: show info of entrie\n");
+		"please do not use it on your system.\n\n"
+		"show-host-info: show info about host\n"
+		"make-entrie:    make systemd-boot entrie\n"
+		"clean:          remove unneccesary entrie\n"
+		"show-entrie:    info of entrie\n"
+		"check:          check kernel mismatch for snapshot\n");
 }
 
 int main(int argc, char **argv)
