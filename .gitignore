@@ -1,4 +1,6 @@
 /#*
 *.o
 /src/build/
+/src/build-debug/
 /src/.cache/
+/docs/

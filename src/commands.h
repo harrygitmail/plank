@@ -18,3 +18,5 @@ int make_entrie(int argc, char **argv);
 int clean(int argc, char **argv);
 
 int show_entrie(int argc, char **argv);
+
+int check(int argc, char **argv);
