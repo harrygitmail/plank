@@ -173,3 +173,33 @@ out:
 	free(str_uuid);
 	return ret;
 }
+
+enum plank_status umount_top_subvol(
+	const char *target)
+{
+	struct libmnt_context *mount_context = NULL;
+	int tmp_ret;
+	enum plank_status ret = PLANK_OK;
+	mount_context = mnt_new_context();
+
+	if (mount_context == NULL)
+		return PLANK_ERR;
+
+	tmp_ret = mnt_context_set_target(mount_context, target);
+
+	if (tmp_ret < 0) {
+		ret = PLANK_LIBMOUNT_ERR;
+		goto out;
+	}
+
+	tmp_ret = mnt_context_umount(mount_context);
+
+	if (tmp_ret > 0) {
+		ret = PLANK_LIBMOUNT_ERR;
+		goto out;
+	}
+
+out:
+	mnt_free_context(mount_context);
+	return ret;
+}
