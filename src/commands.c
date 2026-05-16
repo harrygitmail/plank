@@ -572,6 +572,13 @@ int check(int argc, char **argv)
 
 	}
 
+	close(fd);
+
+	ret = umount_top_subvol("/mnt");
+	if (ret == PLANK_LIBMOUNT_ERR) {
+		fprintf(stderr, "libmount operation failed");
+		goto out;
+	}
 out:
 	free_system_info(info, SYS_INFO_SHOW);
 	for (size_t i = 0; i < info.system.snap.counts; i++) {
@@ -587,6 +594,5 @@ out:
 	free(kern_list_array);
 	free(snap_relative_path);
 
-	if (fd <! 0) close(fd);
 	return status;
 }
