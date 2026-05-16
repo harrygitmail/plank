@@ -123,90 +123,16 @@ int make_entrie(int argc, char **argv)
 		fprintf(stdout, "NO snapshot found\n\n");
 		goto out;
 	}
-	size_t capacity = 6;
-	size_t n = 0;
-
-	host_loader = malloc(sizeof(loader_entry_w) * capacity);
-
-	for(size_t i = 0; i < info.system.snap.counts; i++) {
-
-		struct tm t;
-		char date_time[32];
-
-		localtime_r(
-			&info.system.snap.list[i].snapshot_time.tv_sec,
-			&t);
-
-		strftime(date_time, sizeof(date_time), "%Y-%m-%d %H:%M:%S", &t);
-
-		for (size_t y = 0; y < info.system.kern.counts; y++) {
-			if(n > capacity) {
-				size_t new_capacity = capacity * 2;
-				loader_entry_w *tmp = realloc(host_loader, new_capacity);
-
-				if(tmp == NULL) continue;
-
-				host_loader = tmp;
-				capacity = new_capacity;
-			}
-
-			char *filename = NULL;
-			char *title = NULL;
-			char *sort_key = NULL;
-			char *path_to_kernel = NULL;
-			char *path_to_initrd = NULL;
-			char *options = NULL;
-			char *version = NULL;
-
-			len = asprintf(&filename, "snapshot-%s-%s-%ld.conf",
-					info.system.entry_token,
-					info.system.kern.list[y].kernel_ver,
-					info.system.snap.list[i].snapshot_time.tv_sec);
-
-			len = asprintf(&title, "snapshot %s %s %s",
-					info.os_release.pretty_name,
-					date_time,
-					info.system.kern.list[y].kernel_ver);
-
-			len = asprintf(&sort_key, "%s-%s",
-					info.os_release.id,
-					info.system.kern.list[y].kernel_ver);
-
-			len = asprintf(&path_to_kernel, "/%s/%s/linux",
-					info.system.entry_token,
-					info.system.kern.list[y].kernel_ver);
-
-			len = asprintf(&path_to_initrd, "/%s/%s/initrd",
-					info.system.entry_token,
-					info.system.kern.list[y].kernel_ver);
-
-			len = asprintf(&options, "root=UUID=%s rw rootflags=subvolid=%" PRIu64
-					" loglevel=3 quiet systemd.machine_id=%s",
-					info.system.mount_info.uuid,
-					info.system.snap.list[i].snapshot_id,
-					info.system.entry_token);
-			
-			len = asprintf(&version, "%s",
-					info.system.kern.list[y].kernel_ver);
-
-
-			host_loader[n].filename = filename;
-			host_loader[n].title = title;
-			host_loader[n].version = version;
-			host_loader[n].machine_id = info.system.entry_token;
-			host_loader[n].sort_key = sort_key;
-			host_loader[n].options = options;
-			host_loader[n].kernel = path_to_kernel;
-			host_loader[n].initrd = path_to_initrd;
-			
-			n++;
-			host_loader[n].filename = NULL;
-
-		}
-	}
 
 	int p;
-	enum plank_status write_status;
+	enum plank_status p_status;
+
+	p_status = pre_entrie(info, &host_loader);
+
+	if (p_status != PLANK_OK) {
+		status = p_status;
+		goto out;
+	}
 	
 	for(p = 0; ; p++) {
 		if(host_loader[p].filename == NULL) break;
@@ -221,9 +147,9 @@ int make_entrie(int argc, char **argv)
 
 		FILE *file = fopen(path_to_file, "w");
 
-		write_status = write_entrie(&host_loader[p], file);
+		p_status = write_entrie(&host_loader[p], file);
 
-		if (write_status != PLANK_OK)
+		if (p_status != PLANK_OK)
 			goto out;
 
 		fclose(file);

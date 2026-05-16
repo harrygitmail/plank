@@ -9,74 +9,8 @@
 #include "types.h"
 #include "common.h"
 
-
-
-char **read_file(FILE *file)
-{
-
-	char *buffer = NULL;
-	char **lines = NULL;
-
-	enum plank_status ret = PLANK_OK;
-	
-	size_t line_count = 6;
-	size_t c_line = 0;
-
-	ssize_t nread;
-	size_t buffer_size;
-
-	lines = malloc(sizeof(char *) * line_count);
-
-	for(;;) {
-
-		if(c_line - 1 <= line_count ) {
-			char **tmp;
-			size_t  new_line_count;
-			new_line_count = line_count * 2;
-			tmp = realloc(lines, new_line_count * sizeof(char *));
-			if(tmp == NULL) {
-				ret = PLANK_MEM_ERR;
-				goto out;
-			}
-
-			lines = tmp;
-			line_count = new_line_count;
-		}
-
-
-		nread = getline(&buffer, &buffer_size, file);
-		if(nread == -1) {
-			lines[c_line] = NULL;
-			break;
-		}
-
-		buffer[nread - 1] = '\0';
-
-		lines[c_line] = strdup(buffer);
-
-
-		c_line++;
-
-		lines[c_line] = NULL;
-		
-	}
-		
-
-out:
-	if(ret == PLANK_MEM_ERR) {
-		for(size_t i = 0; i < c_line; i++) free(lines[i]);
-
-		free(lines);
-		lines = NULL;
-	}
-		
-
-	free(buffer);
-
-	return lines;
-}
-
-struct loader_entries *list_loader_entries(const char *BOOT, const char *entry_token)
+struct loader_entries *list_loader_entries(const char *BOOT,
+	const char *entry_token)
 {
 	char *path_to_files = NULL;
 	struct loader_entrie *entries = NULL;
@@ -224,4 +158,134 @@ void link_loader_entries(
 
 	entries->counts = entrie_c;
 
+}
+
+#define ON_ERR_OUT(X, Y) 		\
+	if ((X) == -1 ) {		\
+		ret = (Y);		\
+		goto out;		\
+	}
+
+
+enum plank_status pre_entrie(struct system_info s_info,
+	struct loader_entrie_w **entrie_out)
+{
+	struct snapshot_list snap;
+	snap = s_info.system.snap;
+
+	struct kernel_list kern;
+	kern = s_info.system.kern;
+
+	int len;
+	enum plank_status ret = PLANK_OK;
+
+	size_t capacity = 5;
+	size_t n = 0;
+
+	*entrie_out = malloc(sizeof(struct loader_entrie_w) * capacity);
+
+	for (size_t i = 0; i < snap.counts; i++) {
+		struct tm t;
+		char date_time[32];
+
+		struct timespec snap_time;
+		snap_time = s_info.system.snap.list[i].snapshot_time;
+
+		localtime_r(&snap_time.tv_sec, &t);
+
+		strftime(date_time, sizeof(date_time), "%Y-%m-%d %H:%M:%S", &t);
+
+		for (size_t j = 0; j < kern.counts; j++) {
+
+			if (n >= capacity + 1) {
+				struct loader_entrie_w *tmp;
+				size_t new_capacity = capacity * 2;
+
+				size_t nsize;
+				nsize = sizeof(struct loader_entrie_w) * new_capacity;
+
+				tmp = realloc(*entrie_out, nsize);
+
+				if (tmp == NULL)
+					goto out;
+
+				*entrie_out = tmp;
+				capacity = new_capacity;
+
+			}
+
+			char *filename = NULL;
+			char *title = NULL;
+			char *sort_key = NULL;
+			char *path_to_kernel = NULL;
+			char *path_to_initrd = NULL;
+			char *options = NULL;
+			char *version = NULL;
+
+			len = asprintf(&filename, "snapshot-%s-%s-%ld.conf",
+				s_info.system.entry_token,
+				kern.list[j].kernel_ver,
+				snap.list[i].snapshot_time.tv_sec);
+
+			ON_ERR_OUT(len, PLANK_ERR);
+
+			len = asprintf(&title, "snapshot %s %s %s",
+				s_info.os_release.pretty_name,
+				date_time,
+				kern.list[j].kernel_ver);
+
+			ON_ERR_OUT(len, PLANK_ERR);
+
+			len = asprintf(&sort_key, "%s-%s",
+				s_info.os_release.id,
+				kern.list[j].kernel_ver);
+
+			ON_ERR_OUT(len, PLANK_ERR);
+
+			len = asprintf(&path_to_kernel, "/%s/%s/linux",
+				s_info.system.entry_token,
+				kern.list[j].kernel_ver);
+
+			ON_ERR_OUT(len, PLANK_ERR);
+
+			len = asprintf(&path_to_initrd, "/%s/%s/initrd",
+				s_info.system.entry_token,
+				kern.list[j].kernel_ver);
+
+			ON_ERR_OUT(len, PLANK_ERR);
+
+			len = asprintf(&options,
+				"root=UUID=%s rw rootflags=subvolid=%" PRIu64
+				" loglevel=3 quiet systemd.machine_id=%s",
+				s_info.system.mount_info.uuid,
+				snap.list[i].snapshot_id,
+				s_info.system.entry_token);
+
+			ON_ERR_OUT(len, PLANK_ERR);
+
+			len = asprintf(&version, "%s",
+				kern.list[j].kernel_ver);
+
+			ON_ERR_OUT(len, PLANK_ERR);
+
+			(*entrie_out)[n].filename = filename;
+			(*entrie_out)[n].title = title;
+			(*entrie_out)[n].version = version;
+			(*entrie_out)[n].machine_id = s_info.system.entry_token;
+			(*entrie_out)[n].sort_key = sort_key;
+			(*entrie_out)[n].options = options;
+			(*entrie_out)[n].kernel = path_to_kernel;
+			(*entrie_out)[n].initrd = path_to_initrd;
+
+			n++;
+
+			(*entrie_out)[n].filename = NULL;
+
+
+		}
+
+	}
+out:
+
+	return ret;
 }
