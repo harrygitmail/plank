@@ -17,7 +17,7 @@ struct system_info get_system_info(int type)
 
 	int tar_subvol_fd = -1;
 
-	kernel_list kern;
+	struct kernel_list kern;
 	kern.list = NULL;
 	kern.counts = 0;
 

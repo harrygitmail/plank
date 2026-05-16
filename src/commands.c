@@ -97,7 +97,7 @@ int make_entrie(int argc, char **argv)
 	int status = 0;
 
 	struct system_info info;
-	loader_entry_w *host_loader = NULL;
+	struct loader_entrie_w *host_loader = NULL;
 
 	info = get_system_info(SYS_INFO_WRITE);
 
@@ -249,7 +249,7 @@ int clean(int argc , char **argv) {
 	enum plank_status ret;
 	int tar_subvol_fd;
 
-	kernel_list host;
+	struct kernel_list host;
 	host.list = NULL;
 	struct snapshot_list tar_subvol_snap_info;
 	tar_subvol_snap_info.list = NULL;
@@ -475,7 +475,7 @@ int check(int argc, char **argv)
 	int status = 0;
 	char **subvol_paths = NULL;
 	char **snap_relative_path = NULL;
-	kernel_list **kern_list_array = NULL;
+	struct kernel_list **kern_list_array = NULL;
 
 	info = get_system_info(SYS_INFO_SHOW);
 
@@ -514,14 +514,14 @@ int check(int argc, char **argv)
 	size_t capacity = info.system.snap.counts;
 
 	subvol_paths = malloc(sizeof(char *) * capacity);
-	kern_list_array = malloc(sizeof(kernel_list *) * capacity);
+	kern_list_array = malloc(sizeof(struct kernel_list *) * capacity);
 	snap_relative_path = malloc(sizeof(char *) * capacity);
 
 	int fd = open("/mnt", O_RDONLY);
 	if (fd < 0) goto out;
 
 	for (size_t i = 0; i < info.system.snap.counts; i++) {
-		kern_list_array[i] = malloc(sizeof(kernel_list));
+		kern_list_array[i] = malloc(sizeof(struct kernel_list));
 
 		snap_relative_path[i] = get_subvol_path(
 			info.system.snap.list[i].snapshot_id,
@@ -541,7 +541,7 @@ int check(int argc, char **argv)
 		printf("snapshot path: %s\n",
 			snap_relative_path[i]);
 
-		kernel_list *k = NULL;
+		struct kernel_list *k = NULL;
 
 		k = kernel_diff(&info.system.kern, kern_list_array[i]);
 

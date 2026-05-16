@@ -52,7 +52,7 @@ enum plank_status get_snapshot_list(
 	size_t capacity = 6;
 	size_t n = 0;
 
-	ret->list = malloc(sizeof(snapshot_info) * capacity);
+	ret->list = malloc(sizeof(struct snapshot_info) * capacity);
 
 	if (ret->list == NULL) return PLANK_MEM_ERR;
 
@@ -75,9 +75,9 @@ enum plank_status get_snapshot_list(
 
 			size_t new_capacity = capacity * 2;
 
-			snapshot_info *temp = realloc(
+			struct snapshot_info *temp = realloc(
 				ret->list,
-				sizeof(snapshot_info) * new_capacity);
+				sizeof(struct snapshot_info) * new_capacity);
 
 			if(temp == NULL) return PLANK_MEM_ERR;
 

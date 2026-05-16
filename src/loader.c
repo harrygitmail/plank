@@ -161,13 +161,13 @@ static inline int is_time_same(struct timespec t1, struct timespec t2)
 	return 1;
 }
 void link_loader_entries(
-	const kernel_list *kern_list,
+	const struct kernel_list *kern_list,
 	const struct snapshot_list *snap_list,
 	struct loader_entries *const entries)
 {
 	size_t entrie_c = 0;
 
-	snapshot_info temp_snap_struct;
+	struct snapshot_info temp_snap_struct;
 	char tmp_kern_ver[65];
 
 	for(size_t i = 0; i < entries->counts; i++) {
@@ -209,7 +209,7 @@ void link_loader_entries(
 
 				found_snap = 1;
 
-				snapshot_info *this;
+				struct snapshot_info *this;
 				this = &snap_list->list[k];
 
 				entries->entrie[entrie_c].snap = this;

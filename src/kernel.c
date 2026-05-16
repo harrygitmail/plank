@@ -10,7 +10,9 @@
 #include "types.h"
 #include "kernel.h"
 
-enum plank_status get_kernel_list(kernel_list *const ret, const char *root)
+enum plank_status get_kernel_list(
+	struct kernel_list *const ret,
+	const char *root)
 {
 	int root_fd = open(root, O_RDONLY);
 	if(root_fd < 0 ) return PLANK_ERR;
@@ -34,7 +36,9 @@ enum plank_status get_kernel_list(kernel_list *const ret, const char *root)
 	return PLANK_OK;
 }
 
-kernel_list *kernel_diff(const kernel_list *k1, const kernel_list *k2)
+struct kernel_list *kernel_diff(
+	const struct kernel_list *k1,
+	const struct kernel_list *k2)
 {
 	size_t diff_c = 0;
 	struct kernel_ver *list = NULL;
@@ -74,7 +78,7 @@ kernel_list *kernel_diff(const kernel_list *k1, const kernel_list *k2)
 		list = NULL;
 	}
 
-	kernel_list *ret = malloc(sizeof(kernel_list));
+	struct kernel_list *ret = malloc(sizeof(struct kernel_list));
 	ret->list = list;
 	ret->counts = diff_c;
 

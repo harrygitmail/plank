@@ -3,5 +3,6 @@
 #include "stdio.h"
 
 
-enum plank_status write_entrie(const loader_entry_w *entrie,
+enum plank_status write_entrie(
+	const struct loader_entrie_w *entrie,
 	FILE *steam);

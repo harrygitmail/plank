@@ -17,13 +17,13 @@ enum plank_status {
 	PLANK_NO_ENTRY,
 };
 
-typedef struct {
+struct snapshot_info{
 	uint64_t snapshot_id;
 	struct timespec snapshot_time;
-} snapshot_info;
+};
 
 struct snapshot_list {
-	snapshot_info *list;
+	struct snapshot_info *list;
 	size_t counts;
 };
 
@@ -31,13 +31,13 @@ struct kernel_ver {
 	char kernel_ver[65];
 };
 
-typedef struct {
+struct kernel_list{
 	struct kernel_ver *list;
 	size_t counts;
 
-} kernel_list;
+};
 
-typedef struct {
+struct loader_entrie_w{
 
 	char *filename;
 	char *title;
@@ -48,7 +48,7 @@ typedef struct {
 	char *kernel;
 	char *initrd;
 
-} loader_entry_w;
+};
 
 
 typedef enum {
@@ -60,7 +60,7 @@ struct loader_entrie {
 
 	char *file_name;
 	struct kernel_ver *kern;
-	snapshot_info *snap;
+	struct snapshot_info *snap;
 	entry_status status;
 
 };
@@ -88,7 +88,7 @@ struct system_info {
 
 		char *entry_token;
 		char *boot_path;
-		kernel_list kern;
+		struct kernel_list kern;
 		struct snapshot_list snap;
 		struct system_mount_info mount_info;
 
