@@ -38,24 +38,51 @@ enum plank_status get_kernel_list(
 
 struct kernel_list *kernel_diff(
 	const struct kernel_list *k1,
-	const struct kernel_list *k2)
+	const struct kernel_list *k2,
+	enum kern_diff diff_type)
 {
 	size_t diff_c = 0;
 	struct kernel_ver *list = NULL;
 
-	list = malloc(sizeof(struct kernel_ver) * k1->counts);
+	const struct kernel_list *p1;
+	const struct kernel_list *p2;
 
-	for (size_t i = 0; i < k1->counts; i++) {
+	int h;
+
+	switch (diff_type) {
+	case KERN_P1:
+			p1 = k1;
+			p2 = k2;
+			h = 0;		// not common in list
+			break;
+
+	case KERN_P2:
+			p1 = k2;
+			p2 = k1;
+			h = 0;		// not common in list
+			break;
+
+	case KERN_COM:
+			p1 = k1;
+			p2 = k2;
+			h = 1;		// common in both list
+			break;
+
+	}
+
+	list = malloc(sizeof(struct kernel_ver) * p1->counts);
+
+	for (size_t i = 0; i < p1->counts; i++) {
 		int found = 0;
 
 		char *comp_1;
-		comp_1 = k1->list[i].kernel_ver;
+		comp_1 = p1->list[i].kernel_ver;
 
-		for (size_t j = 0; j < k2->counts; j++) {
+		for (size_t j = 0; j < p2->counts; j++) {
 
 			char *comp_2;
 
-			comp_2 = k2->list[j].kernel_ver;
+			comp_2 = p2->list[j].kernel_ver;
 
 			int c = strcmp(comp_1, comp_2);
 
@@ -65,9 +92,9 @@ struct kernel_list *kernel_diff(
 			}
 		}
 
-		if (found == 0) {
+		if (found == h) {
 
-			strcpy(list[diff_c].kernel_ver, k1->list[i].kernel_ver);
+			strcpy(list[diff_c].kernel_ver, p1->list[i].kernel_ver);
 			++diff_c;
 
 		}

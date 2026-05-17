@@ -1,15 +1,6 @@
 #pragma once
 #include <types.h>
 
-/* kernel_list - store version string of Linux kernel
- *
- * @kernel_ver: hold version string
- *
- * why 65 ? in 'struct new_utsname' from 'include/uapi/linux/utsname.h' (Linux kernel source tree),
- * for most system today its enought unless our binary 
- * running on 1991 toaster or a custom NASA space-probe
- */
-
 /* get_kernel_list - get list of kernel installed on system
  *
  * @ret: pointer to 'kernel_list' array head.
@@ -22,6 +13,13 @@
  */
 enum plank_status get_kernel_list(struct kernel_list *const ret, const char *root);
 
+enum kern_diff {
+	KERN_P1,  		//kernel present in first list
+	KERN_P2,		//kernel present in secound list
+	KERN_COM		//kernel present in both list
+};
+
 struct kernel_list *kernel_diff(
 	const struct kernel_list *k1, 
-	const struct kernel_list *k2);
+	const struct kernel_list *k2,
+	enum kern_diff diff_type);

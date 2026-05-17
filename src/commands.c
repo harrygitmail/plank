@@ -469,7 +469,7 @@ int check(int argc, char **argv)
 
 		struct kernel_list *k = NULL;
 
-		k = kernel_diff(&info.system.kern, kern_list_array[i]);
+		k = kernel_diff(&info.system.kern, kern_list_array[i], KERN_P1);
 
 		if (k->list == NULL) {
 			printf("No kernel mistmatch found for this snapshot\n");
