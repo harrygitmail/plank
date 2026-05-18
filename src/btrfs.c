@@ -96,9 +96,9 @@ enum plank_status get_snapshot_list(
 
 	btrfs_util_destroy_subvolume_iterator(tar_subvol_iter);
 
-	if (n == 0) return PLANK_BTRFS_NO_SNAPSHOT_FOUND;
-
 	ret->counts = n;
+
+	if (n == 0) return PLANK_BTRFS_NO_SNAPSHOT_FOUND;
 
 	return PLANK_OK;
 }

@@ -43,7 +43,7 @@ int show_host_info(int argc, char **argv)
 		goto out;
 	}
 
-	if (info.status == PLANK_BTRFS_NO_SNAPSHOT_FOUND) {
+	if (info.system.snap.counts == 0) {
 		fprintf(stdout, "NO snapshot found\n\n");
 		goto show_kern;
 	}
@@ -119,7 +119,7 @@ int make_entrie(int argc, char **argv)
 		goto out;
 	}
 
-	if (info.status == PLANK_BTRFS_NO_SNAPSHOT_FOUND) {
+	if (info.system.snap.counts == 0) {
 		fprintf(stdout, "NO snapshot found\n\n");
 		goto out;
 	}
@@ -423,7 +423,7 @@ int check(int argc, char **argv)
 		goto out;
 	}
 
-	if (info.status == PLANK_BTRFS_NO_SNAPSHOT_FOUND) {
+	if (info.system.snap.counts == 0) {
 		fprintf(stdout, "NO snapshot found\n\n");
 		goto out;
 	}
