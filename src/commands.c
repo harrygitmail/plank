@@ -6,6 +6,7 @@
 #include "kernel.h"
 #include "loader.h"
 #include "plank.h"
+#include "parse.h"
 #include "mount.h"
 #include "types.h"
 #include "btrfs.h"
@@ -367,9 +368,66 @@ int show_entrie(int argc, char **argv)
 		goto exit;
 	}
 
-	char *option = argv[1];
+	if (argc > 1) {
+		if (strcmp(argv[1], "-l") == 0)
+			goto just_list;
 
-	if(strcmp(option, "-l") == 0) goto just_list;
+		fprintf(stderr, "use '-l' option to just list entries\n");
+		goto exit;
+	}
+	for (size_t i = 0; i < entries->counts; i++) {
+
+		char *path_to_file = NULL;
+		int len = asprintf(&path_to_file,
+			"%s/loader/entries/%s",
+			path_to_boot,
+			entries->entrie[i].file_name);
+
+		if (len == -1) {
+			ret = PLANK_MEM_ERR;
+			goto exit;
+		}
+
+		FILE *file = fopen(path_to_file, "r");
+		if (file == NULL) {
+			ret = PLANK_ERR;
+			goto exit;
+		}
+
+		struct loader_entrie_w *entrie = NULL;
+
+		entrie = parse_entrie(file);
+		if (entrie == NULL) {
+			ret = PLANK_ERR;
+			goto exit;
+		}
+
+		fclose(file);
+
+		free(path_to_file);
+
+		printf("        title: %s\n", entrie->title);
+		printf("      version: %s\n", entrie->version);
+		printf("   machine-id: %s\n", entrie->machine_id);
+		printf("     sort-key: %s\n", entrie->sort_key);
+		printf("      options: %s\n", entrie->options);
+		printf("        linux: %s\n", entrie->kernel);
+		printf("       initrd: %s\n", entrie->initrd);
+
+		printf("\n");
+
+		free(entrie->title);
+		free(entrie->version);
+		free(entrie->machine_id);
+		free(entrie->sort_key);
+		free(entrie->options);
+		free(entrie->kernel);
+		free(entrie->initrd);
+
+		free(entrie);
+	}
+
+	goto exit;
 
 	status = 0;
 
