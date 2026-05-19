@@ -188,6 +188,8 @@ void free_file_list(char **const p, size_t counts) {
 	free(p);
 }
 
+#define UVALFD -1
+
 char **list_files(const char *path, int dirfd, size_t *const count)
 {
 	char **files = NULL;
@@ -199,7 +201,7 @@ char **list_files(const char *path, int dirfd, size_t *const count)
 	size_t capacity = 5;
 	size_t count_file = 0;
 
-	if (dirfd == 0 ) {
+	if (dirfd == UVALFD) {
 		dir = opendir(path);
 
 	} else {
