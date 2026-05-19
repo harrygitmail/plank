@@ -1,8 +1,5 @@
 #pragma once
-#include <stdio.h>
 #include "types.h"
-
-char **read_file(FILE *file);
 
 void link_loader_entries(
 	const struct kernel_list *kern_list,

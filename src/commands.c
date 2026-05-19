@@ -83,7 +83,7 @@ show_next:
 	printf("$BOOT: 		%s\n", info.system.boot_path);
 	printf("pretty name:	%s\n", info.os_release.pretty_name);
 	printf("ID: 		%s\n", info.os_release.id);
-	printf("UUID: 		%s", info.system.mount_info.uuid);
+	printf("UUID: 		%s\n", info.system.mount_info.uuid);
 
 	
 out:
