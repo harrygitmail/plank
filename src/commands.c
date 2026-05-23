@@ -186,6 +186,8 @@ int clean(int argc , char **argv) {
 	char *boot_path = NULL;
 	char **list_to_delete = NULL;
 
+	size_t entry_del_count = 0;
+
 	tar_subvol_fd = open("/", O_RDONLY);
 
 	if(tar_subvol_fd == -1) {
@@ -230,7 +232,6 @@ int clean(int argc , char **argv) {
 
 	link_loader_entries(&host, &tar_subvol_snap_info, entries);
 
-	size_t entry_del_count = 0;
 	list_to_delete = malloc(sizeof(char *) * entries->counts);
 
 	for(size_t p = 0; p < entries->counts; p++) {
@@ -300,21 +301,37 @@ clean_all:
 		goto out;
 	}
 
-	char *path_to_file = NULL;
+	list_to_delete = malloc(sizeof(char *) * entries->counts);
+	if (list_to_delete == NULL) {
+		printf("failed to delete entries\n");
+		goto out;
+	}
 
-	printf("deleting following files:\n");
+	printf("about to delete following files:\n");
 
 	for(size_t i = 0; i < entries->counts; i++) {
 
-	asprintf(&path_to_file, "%s/loader/entries/%s",
+	asprintf(&list_to_delete[entry_del_count], "%s/loader/entries/%s",
 			boot_path,
 			entries->entrie[i].file_name);
 
-	printf("%s\n", path_to_file);
-	unlink(path_to_file);
+	printf("%s\n", list_to_delete[entry_del_count++]);
 
-	free(path_to_file);
 	}
+
+	printf("hit y and hit enter to delete them\n");
+	char input2[100];
+	scanf("%s", input2);
+
+	int c2 = strncmp(input2, "y", 1);
+
+	if (c2 != 0) {
+		printf("abort!\n");
+		goto out;
+	}
+
+	for (size_t i = 0; i < entry_del_count; i++)
+		unlink(list_to_delete[i]);
 
 out:
 	if(tar_subvol_fd != -1) close(tar_subvol_fd);
