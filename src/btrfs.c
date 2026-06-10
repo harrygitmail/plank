@@ -182,3 +182,247 @@ enum plank_status get_subvol_list(struct subvol_list *ret, int fd)
 
 	return PLANK_OK;
 }
+
+struct sub_ref *int_sub_ref(const struct subvol_list *ls)
+{
+	struct sub_ref *ref = calloc(ls->total + 1, sizeof(struct sub_ref));
+	if (ref == NULL)
+		return NULL;
+
+	for (size_t i = 0; i < ls->total; i++) {
+		ref[i].id = ls->subvols[i].id;
+		ref[i].par_uuid = ls->subvols[i].par_uuid;
+		ref[i].uuid = ls->subvols[i].uuid;
+		ref[i].child_count = 0;
+		ref[i].source = 0;
+	}
+
+	return ref;
+}
+
+void sbref_up(struct sub_ref *ref, struct subvol_list *ls)
+{
+	size_t total = ls->total;
+
+	for (size_t i = 0; i < total; i++) {
+		for (size_t j = 0; j < total; j++) {
+			int c = memcmp(ref[i].uuid, ref[j].par_uuid, 16);
+			if (c != 0)
+				continue;
+
+			ref[j].source = ref[i].id;
+			size_t cnt = ref[i].child_count;
+			ref[i].child_count = ++cnt;
+		}
+
+	}
+}
+
+static struct bnode *add_node(
+	uint64_t id,
+	struct bnode *tar,
+	enum bnode_type type)
+{
+	struct bnode *node = malloc(sizeof(struct bnode));
+	if (node == NULL)
+		return NULL;
+
+	node->id = id;
+	node->leaf = NULL;
+	node->smdp_br = NULL;
+	node->dpdp_br = NULL;
+
+	switch (type) {
+	case BNODE_INIT:
+		node->id = 0;
+		break;
+
+	case BNODE_LEAF:
+		tar->leaf = node;
+		break;
+
+	case BNODE_SMBR:
+		tar->smdp_br = node;
+		break;
+
+	case BNODE_DPBR:
+		tar->dpdp_br = node;
+		break;
+
+	default:
+		free(node);
+		node = NULL;
+		break;
+	}
+
+	return node;
+}
+
+
+void free_tree(struct bnode *node)
+{
+    if (node == NULL)
+        return;
+
+    free_tree(node->dpdp_br);
+    free_tree(node->smdp_br);
+    free_tree(node->leaf);
+
+    free(node);
+}
+
+static int add_all_lef(
+	struct sub_ref *ref,
+	size_t total,
+	struct bnode *br)
+{
+	uint64_t src_id = br->id;
+	struct bnode *br_head = br;
+	struct bnode *lef_tail = br_head;
+
+	int n = 0;
+
+	for (size_t i = 0; i < total; i ++) {
+		if (ref[i].child_count != 0)
+			continue;
+
+		if (ref[i].source != src_id)
+			continue;
+
+		struct bnode *cur = add_node(ref[i].id, lef_tail, BNODE_LEAF);
+		if (cur == NULL)
+			goto fail;
+
+		lef_tail = cur;
+		n++;
+	}
+
+	return n;
+
+fail:
+	free_tree(br->leaf);
+	return -1;
+
+}
+
+static int add_all_br(
+	struct sub_ref *ref,
+	size_t total,
+	struct bnode *br)
+{
+	uint64_t src_id = br->id;
+
+	struct bnode *br_head = br;
+	struct bnode *br_tail = br_head;
+
+	int n = 0;
+
+	enum bnode_type ntype;
+
+	for (size_t i = 0; i < total; i++) {
+		if (ref[i].child_count == 0)
+			continue;
+
+		if (ref[i].source != src_id)
+			continue;
+
+		if (n == 0)
+			ntype = BNODE_DPBR;
+		else
+			ntype = BNODE_SMBR;
+
+		struct bnode *curr = add_node(ref[i].id, br_tail, ntype);
+		if (curr == NULL)
+			goto fail;
+
+		br_tail = curr;
+		n++;
+	}
+
+	return n;
+
+fail:
+	free_tree(br->dpdp_br);
+	return -1;
+}
+
+static int mktree(
+	struct sub_ref *ref,
+	size_t total,
+	struct bnode *node)
+{
+	if (node == NULL)
+		return -1;
+
+	int ret = add_all_lef(ref, total, node);
+	if (ret == -1)
+		return -1;
+
+	ret = add_all_br(ref, total, node);
+	if (ret == -1)
+		return -1;
+
+	if (node->smdp_br != NULL)
+		if (mktree(ref, total, node->smdp_br) == -1)
+			return -1;
+
+	if (node->dpdp_br != NULL)
+		if (mktree(ref, total, node->dpdp_br) == -1)
+			return -1;
+
+
+	return 0;
+
+}
+
+struct bnode *tree(struct sub_ref *ref, size_t total)
+{
+	struct bnode *head = add_node(0, NULL, BNODE_INIT);
+	if (head == NULL)
+		return NULL;
+
+	int ret = mktree(ref, total, head);
+	if (ret == -1)
+		goto fail;
+
+	return head;
+
+fail:
+	free_tree(head);
+	return NULL;
+}
+
+void ptree(struct bnode *node, int depth)
+{
+	struct bnode *l;
+	if (node == NULL)
+		return;
+
+	if (node->id == 0) {
+		printf("| <-- root branch\n");
+		goto next;
+	}
+
+	printf("|");
+	for (size_t i = 1; i < depth; i++)
+		printf(" |");
+
+	printf("-%" PRIu64 "\n", node->id);
+
+next:
+	l = node->leaf;
+	while (l != NULL) {
+		printf("|");
+		for (size_t i = 0; i < depth; i++)
+			printf(" |");
+		printf("-%" PRIu64 "\n", l->id);
+
+		l = l->leaf;
+	}
+
+	ptree(node->dpdp_br, depth + 1);
+
+	ptree(node->smdp_br, depth);
+
+
+}

@@ -630,6 +630,19 @@ int ls_subvol(int argc, char **argv)
 		return -3;
 	}
 
+	if (argc > 2 ) {
+		if (strcmp(op, "-t") == 0)
+			goto show_tree;
+
+		fprintf(stderr,
+			"'%s' invaild option use '-t' to get tree view of snapshots\n", op);
+
+		free(subvol_ls.subvols);
+
+		return -3;
+
+	}
+
 	for (size_t i = 0; i < subvol_ls.total; i++) {
 		printf("subvol id: 		%" PRIu64 "\n",
 			subvol_ls.subvols[i].id);
@@ -653,6 +666,27 @@ int ls_subvol(int argc, char **argv)
 		printf("\n");
 
 	}
+
+	goto out;
+
+show_tree:
+
+	ref = int_sub_ref(&subvol_ls);
+	if (ref == NULL) {
+		ret = -1;
+		goto out;
+	}
+
+	sbref_up(ref, &subvol_ls);
+
+	head = tree(ref, subvol_ls.total);
+
+	if (head == NULL) {
+		ret = -1;
+		goto out;
+	}
+
+	ptree(head, 0);
 
 out:
 	free(subvol_ls.subvols);

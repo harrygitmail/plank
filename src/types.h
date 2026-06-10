@@ -124,3 +124,32 @@ struct subvol_list {
 	struct subvol_info *subvols;
 	size_t total;
 };
+
+struct sub_ref {
+	uint64_t id;
+	size_t child_count;
+	void *uuid;
+	void *par_uuid;
+	uint64_t source;
+};
+
+enum bnode_type {
+	BNODE_INIT,
+	BNODE_LEAF,
+	BNODE_SMBR,
+	BNODE_DPBR,
+};
+
+/**
+ * @id : id of subvolume
+ * @smdp_br : point to next branch on same depth
+ * @dpdp_br : point to next branch on deeper depth
+ * @leaf : point to next leaf within same branch
+ */
+
+struct bnode {
+	uint64_t id;
+	struct bnode *smdp_br;
+	struct bnode *dpdp_br;
+	struct bnode *leaf;
+};

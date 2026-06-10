@@ -33,3 +33,14 @@ char *get_subvol_path(uint64_t id, int fd);
 enum plank_status get_subvol_list(
 	struct subvol_list *ret,
 	int fd);
+
+struct sub_ref *int_sub_ref(const struct subvol_list *ls);
+
+void sbref_up(struct sub_ref *ref, struct subvol_list *ls);
+
+
+void free_tree(struct bnode *node);
+
+struct bnode *tree(struct sub_ref *ref, size_t total);
+
+void ptree(struct bnode *node, int depth);
