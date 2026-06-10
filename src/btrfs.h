@@ -11,7 +11,8 @@
  * than PATH(which can be changed by user later)
  */
 
-/* get_snapshot_list - get list of snapshot_info 
+/* *
+ * get_snapshot_list - get list of snapshot_info
  * @tar_subvol_fd: fd of opened path that point to target subvolume.
  * @ret: pointer to snapshot_info.
  *
@@ -28,3 +29,7 @@ enum plank_status get_snapshot_list(
 	struct snapshot_list *ret);
 
 char *get_subvol_path(uint64_t id, int fd);
+
+enum plank_status get_subvol_list(
+	struct subvol_list *ret,
+	int fd);

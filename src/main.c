@@ -15,6 +15,7 @@ command commands[] = {
 	{"clean", clean},
 	{"show-entrie", show_entrie},
 	{"check", check},
+	{"list-subvol", ls_subvol},
 	{NULL,NULL}
 };
 
@@ -27,7 +28,8 @@ void usage()
 		"make-entrie:    make systemd-boot entrie\n"
 		"clean:          remove unneccesary entrie\n"
 		"show-entrie:    info of entrie\n"
-		"check:          check kernel mismatch for snapshot\n");
+		"check:          check kernel mismatch for snapshot\n"
+		"list-subvol:    list subvol info\n");
 }
 
 int main(int argc, char **argv)

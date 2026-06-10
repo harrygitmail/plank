@@ -1,5 +1,5 @@
+#include "commands.h"
 #define _GNU_SOURCE 
-#include <stddef.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include "common.h"
@@ -11,13 +11,9 @@
 #include "types.h"
 #include "btrfs.h"
 #include "write.h"
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <dirent.h>
 
 int show_host_info(int argc, char **argv)
 {
@@ -596,4 +592,74 @@ out:
 	free(snap_relative_path);
 
 	return status;
+}
+
+int ls_subvol(int argc, char **argv)
+{
+	if (argc < 2) {
+		fprintf(stderr, "please provide path to btrfs filesystem\n");
+		return -2;
+	}
+
+	char *tar_fs = argv[1];
+	char *op = argv[2];
+
+	int btrfs = open(tar_fs, O_RDONLY);
+	if (btrfs == -1) {
+		perror("open");
+		return -1;
+	}
+
+	struct subvol_list subvol_ls;
+	subvol_ls.subvols = NULL;
+	subvol_ls.total = 0;
+
+	struct sub_ref *ref = NULL;
+	struct bnode *head = NULL;
+
+	enum plank_status ret = get_subvol_list(&subvol_ls, btrfs);
+	if (ret == PLANK_BTRFS_ERR_NOT_BTRFS) {
+		fprintf(stderr, "%s is not btrfs filesystem\n", tar_fs);
+		close(btrfs);
+		return ret;
+	}
+
+	if (ret == PLANK_BTRFS_ERR) {
+		fprintf(stderr, "btrfs operation failed\n");
+		close(btrfs);
+		return -3;
+	}
+
+	for (size_t i = 0; i < subvol_ls.total; i++) {
+		printf("subvol id: 		%" PRIu64 "\n",
+			subvol_ls.subvols[i].id);
+
+		printf("subvol parent id:	%" PRIu64 "\n",
+			subvol_ls.subvols[i].par_id);
+
+		printf("subvol uuid:		");
+		printf_uuid(subvol_ls.subvols[i].uuid);
+		printf("\n");
+
+		printf("subvol parent uuid:	");
+		printf_uuid(subvol_ls.subvols[i].par_uuid);
+		printf("\n");
+
+		char *path = get_subvol_path(subvol_ls.subvols[i].id, btrfs);
+
+		printf("subvol path:		%s\n", path);
+
+		free(path);
+		printf("\n");
+
+	}
+
+out:
+	free(subvol_ls.subvols);
+	close(btrfs);
+	free(ref);
+
+	free_tree(head);
+
+	return ret;
 }

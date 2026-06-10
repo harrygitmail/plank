@@ -1,6 +1,8 @@
 #pragma once
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <time.h>
 
 enum plank_status {
@@ -109,4 +111,16 @@ struct system_info {
 
 	enum plank_status status;
 
+};
+struct subvol_info {
+	uint64_t 	id;
+	uint64_t 	par_id;
+	uint8_t 	uuid[16];
+	uint8_t 	par_uuid[16];
+	struct timespec otime;
+};
+
+struct subvol_list {
+	struct subvol_info *subvols;
+	size_t total;
 };
