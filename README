@@ -1,0 +1,25 @@
+[LEARNING PROJECT]
+
+plank :- intrigrate btrfs snapshot to systemd-boot
+
+it does few things like following:
+
+- make bootloader entries for snapshot it found.
+- delete loader entries that no longer point to actual snapshot or kernel.
+- allow list and view each bootloader entries (made by plank).
+- check for kernel mismatch (see docs/kernelmismatch.txt).
+- list subvolumes for given btrfs filesystem with additional info.
+- give tree view of btrfs filesystem subvolumes which make it easy to
+  see that who is parent and child in tree.
+
+it currectly in development phace and it include lots
+of strange ways to do things.(as i am learning) and of course
+bugs.
+
+[[about me]]
+
+i stated this project as me learning 'c' and Linux world as computer
+were something i like to learn about. im not cs student or developer
+just curious person fooling around with his old pc. you may see mispell
+words or hard to understand 'talk' in this project document because
+i also dont know much of English.

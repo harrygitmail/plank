@@ -1,0 +1,91 @@
+--------------------------------------------------------------------------
+# KERNEL MISMATCH
+
+when snapshot filesystem do not have kernel which is present on $BOOT
+then KERNEL MISMATCH have happened. for example lets say following kernel
+are on $BOOT
+
+6.14.0.rt3.arch1-8
+6.6.21-zen
+6.18.29-1-lts
+
+and this is snapshots for current root filesystem
+---------------------------------------------------------------------------
+ ID |        otime        |                     path
+---------------------------------------------------------------------------
+270 | 2026-04-15 14:21:16 | timeshift-btrfs/snapshots/2026-04-15_14-21-48/@
+275 | 2026-05-09 19:19:48 | timeshift-btrfs/snapshots/2026-05-09_19-19-48/@
+276 | 2026-05-11 11:53:48 | timeshift-btrfs/snapshots/2026-05-11_11-53-48/@
+---------------------------------------------------------------------------
+
+for ID 270 snapshot, lets say following kernel are present in that
+filesystem (timeshift-btrfs/snapshots/2026-04-15_14-21-48/@).
+
+6.12.0.rt3.arch1-8
+6.6.21-zen
+6.18.28-1-lts
+
+as it can be seen that kernels 6.18.28-1-lts and 6.12.0.rt3.arch1-8
+are not present on $BOOT (while same flavour present on $BOOT).
+
+this could cause issue for boot proccess if kernel need module before
+reaching multi-user.target or graphical.taget. then systemd will drop
+us in rescue mode or emergency mode . or worse if kernel cannot do
+critical operation without that module(maybe kernel panic could happen).
+
+this problem arise from two fact
+- systemd can read what firmware can read (usually fat filesystem)
+- filesystem firmware can read do not support snapshoting.
+
+so we cannot backup $BOOT as it have to be on different partatition.
+from what i know, i see some possible solution with trade off.
+
+- copy kernel to $BOOT
+- use of UKI
+- use of kexec
+
+## copy kernel to $BOOT
+
+this is one of easy solution. we simply can copy snapshot kernels and
+initrd to $BOOT and then make systemd-boot entrie that point to snapshot
+kernel and initrd. this also rise following issues.
+
+- $BOOT running out of space
+- managing kernels on $BOOT
+
+with lots of snapshot we may need to copy lots of kernels and their initrd
+to $BOOT and it can fill it up quick(as with fallback initrd).
+lets say maltiple snapshot that share same kernel than we could simply
+copy it onces and then make multiple loader entrie that use it.
+but wather to use this method is mostly depends on how much space avalable
+on $BOOT.
+
+as we saw above that with multiple kernels and their initrd it will become
+harder to manage those files as time passes. especially when we decide
+to rollback on one of snapshot then we may need to clean up other kernels
+which do not present on snapshot we just rollback. along with that we may
+need to keep kernels of snapshot users may want to keep.
+so it increase complexity.
+
+## use of UKI
+
+unified kernel image are PE binary that comabine all componets for booting
+directly by UEFI firmware or by bootloader.in our case it could solve
+one problem of managing separate initrd and kernel while it struggle with
+same issue we diccused above about space and managing files.
+
+## use of kexec
+
+with use of kexec we can do few things to avoid kernel mismatch problem
+while still booting from kernel present on $BOOT in initial stage. like
+once root is mounted we can load kernel avaible on that filesystem using
+'kexec_load()' or 'kexec_load_file()'. there is also separate ustility
+called 'kexec-tools' which allow loading and booting into new kernel
+from currectly running kernel. this way we can boot into kernel that
+snapshot filesystem(timeshift-btrfs/snapshots/2026-05-11_11-53-48/@)
+have.
+
+while almost all those above solution make it really hard to manage
+kernels on $BOOT. for very simple setup like 1 kernel and few snapshot
+it could be managable. it is still something that i am working on and
+not have solved it competely.
