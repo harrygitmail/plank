@@ -9,5 +9,5 @@ void link_loader_entries(
 struct loader_entries *list_loader_entries(const char *BOOT,
 	const char *entry_token);
 
-enum plank_status pre_entrie(struct system_info s_info,
+enum plank_status pre_entrie(struct system_info *s_info,
 	struct loader_entrie_w **entrie_out);

@@ -11,51 +11,54 @@
 #include "types.h"
 #include "btrfs.h"
 #include "write.h"
+#include "blob.h"
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 int show_host_info(int argc, char **argv)
 {
-	struct system_info info;
+	struct system_info *info = NULL;
 	int status = 0;
 
-	info = get_system_info(SYS_INFO_SHOW);
+	int flags = (SYSINFO_EB | SYSINFO_OS_REL | SYSINFO_SYS);
 
-	if (info.status == PLANK_ERR) {
+	info = get_system_info(flags);
+
+	if (info->status == PLANK_ERR) {
 		fprintf(stderr, "something went wrong!!\n");
-		status = info.status;
+		status = info->status;
 		goto out;
 	}
 
-	if (info.status == PLANK_LIBMOUNT_ERR) {
+	if (info->status == PLANK_LIBMOUNT_ERR) {
 		fprintf(stderr, "libmount operation failed!\n");
-		status = info.status;
+		status = info->status;
 		goto out;
 	}
 
-	if (info.status == PLANK_BOOT_NOT_FOUND) {
+	if (info->status == PLANK_BOOT_NOT_FOUND) {
 		fprintf(stderr, "Unable to find $BOOT. is it mounted corectly ?\n");
-		status = info.status;
+		status = info->status;
 		goto out;
 	}
 
-	if (info.system.snap.counts == 0) {
+	if (info->system.snap.counts == 0) {
 		fprintf(stdout, "NO snapshot found\n\n");
 		goto show_kern;
 	}
 
 	printf("following snapshot found\n");
 
-	for (size_t i = 0; i < info.system.snap.counts; i++) {
-		printf("\t%" PRIu64 "\n", info.system.snap.list[i].snapshot_id);
+	for (size_t i = 0; i < info->system.snap.counts; i++) {
+		printf("\t%" PRIu64 "\n", info->system.snap.list[i].snapshot_id);
 	}
 
 	printf("\n");
 
 show_kern:
 
-	if (info.system.kern.counts == 0) {
+	if (info->system.kern.counts == 0) {
 		fprintf(stdout, "NO kernel found\n\n");
 		goto show_next;
 	}
@@ -63,8 +66,8 @@ show_kern:
 	printf("-----------------------------------------------\n");
 	printf("following kernel found\n");
 
-	for (size_t i = 0; i < info.system.kern.counts; i++) {
-		printf("\t%s\n", info.system.kern.list[i].kernel_ver);
+	for (size_t i = 0; i < info->system.kern.counts; i++) {
+		printf("\t%s\n", info->system.kern.list[i].kernel_ver);
 	}
 
 	printf("\n");
@@ -75,48 +78,49 @@ show_next:
 	printf("----------------------------------------------\n");
 	printf("system info:\n\n");
 
-	printf("entry-token: 	%s\n", info.system.entry_token);
-	printf("$BOOT: 		%s\n", info.system.boot_path);
-	printf("pretty name:	%s\n", info.os_release.pretty_name);
-	printf("ID: 		%s\n", info.os_release.id);
-	printf("UUID: 		%s\n", info.system.mount_info.uuid);
+	printf("entry-token: 	%s\n", info->system.eb.entry_token);
+	printf("$BOOT: 		%s\n", info->system.eb.boot_path);
+	printf("pretty name:	%s\n", info->os_release.pretty_name);
+	printf("ID: 		%s\n", info->os_release.id);
+	printf("UUID: 		%s\n", info->system.mount_info.uuid);
 
 	
 out:
-	free_system_info(info, SYS_INFO_SHOW);
+	free_system_info(info, flags);
 	return status;
 }
 
 int make_entrie(int argc, char **argv)
 {
-	
 	int len;
 	int status = 0;
 
-	struct system_info info;
+	struct system_info *info = NULL;
 	struct loader_entrie_w *host_loader = NULL;
 
-	info = get_system_info(SYS_INFO_WRITE);
+	int flags = (SYSINFO_EB | SYSINFO_SYS | SYSINFO_OS_REL | SYSINFO_LDER);
 
-	if (info.status == PLANK_ERR) {
+	info = get_system_info(flags);
+
+	if (info->status == PLANK_ERR) {
 		fprintf(stderr, "something went wrong!!\n");
-		status = info.status;
+		status = info->status;
 		goto out;
 	}
 
-	if (info.status == PLANK_LIBMOUNT_ERR) {
+	if (info->status == PLANK_LIBMOUNT_ERR) {
 		fprintf(stderr, "libmount operation failed!\n");
-		status = info.status;
+		status = info->status;
 		goto out;
 	}
 
-	if (info.status == PLANK_BOOT_NOT_FOUND) {
+	if (info->status == PLANK_BOOT_NOT_FOUND) {
 		fprintf(stderr, "Unable to find $BOOT. is it mounted corectly ?\n");
-		status = info.status;
+		status = info->status;
 		goto out;
 	}
 
-	if (info.system.snap.counts == 0) {
+	if (info->system.snap.counts == 0) {
 		fprintf(stdout, "NO snapshot found\n\n");
 		goto out;
 	}
@@ -137,7 +141,7 @@ int make_entrie(int argc, char **argv)
 		char *path_to_file = NULL;
 
 		len = asprintf(&path_to_file, "%s/loader/entries/%s",
-				info.system.boot_path,
+				info->system.eb.boot_path,
 				host_loader[p].filename);
 
 		if (len == -1) goto out;
@@ -162,7 +166,7 @@ int make_entrie(int argc, char **argv)
 		free(path_to_file);
 	}
 out:
-	free_system_info(info, SYS_INFO_WRITE);
+	free_system_info(info, flags);
 	free(host_loader);
 
 	return status;
@@ -468,47 +472,49 @@ exit:
 
 int check(int argc, char **argv)
 {
-	struct system_info info;
+	struct system_info *info = NULL;
 	int status = 0;
 	char **subvol_paths = NULL;
 	char **snap_relative_path = NULL;
 	struct kernel_list **kern_list_array = NULL;
 
-	info = get_system_info(SYS_INFO_SHOW);
+	int flags = (SYSINFO_EB | SYSINFO_SYS);
 
-	if (info.status == PLANK_ERR) {
+	info = get_system_info(flags);
+
+	if (info->status == PLANK_ERR) {
 		fprintf(stderr, "something went wrong!!\n");
-		status = info.status;
+		status = info->status;
 		goto out;
 	}
 
-	if (info.status == PLANK_LIBMOUNT_ERR) {
+	if (info->status == PLANK_LIBMOUNT_ERR) {
 		fprintf(stderr, "libmount operation failed!\n");
-		status = info.status;
+		status = info->status;
 		goto out;
 	}
 
-	if (info.status == PLANK_BOOT_NOT_FOUND) {
+	if (info->status == PLANK_BOOT_NOT_FOUND) {
 		fprintf(stderr, "Unable to find $BOOT. is it mounted corectly ?\n");
-		status = info.status;
+		status = info->status;
 		goto out;
 	}
 
-	if (info.system.snap.counts == 0) {
+	if (info->system.snap.counts == 0) {
 		fprintf(stdout, "NO snapshot found\n\n");
 		goto out;
 	}
 
 	enum plank_status ret ;
 
-	ret = mount_top_subvol(info.system.mount_info, "/mnt");
+	ret = mount_top_subvol(info->system.mount_info, "/mnt");
 
 	if (ret != PLANK_OK) {
 		fprintf(stderr, "something went wrong");
 		goto out;
 	}
 
-	size_t capacity = info.system.snap.counts;
+	size_t capacity = info->system.snap.counts;
 
 	subvol_paths = malloc(sizeof(char *) * capacity);
 	kern_list_array = malloc(sizeof(struct kernel_list *) * capacity);
@@ -517,11 +523,11 @@ int check(int argc, char **argv)
 	int fd = open("/mnt", O_RDONLY);
 	if (fd < 0) goto out;
 
-	for (size_t i = 0; i < info.system.snap.counts; i++) {
+	for (size_t i = 0; i < info->system.snap.counts; i++) {
 		kern_list_array[i] = malloc(sizeof(struct kernel_list));
 
 		snap_relative_path[i] = get_subvol_path(
-			info.system.snap.list[i].snapshot_id,
+			info->system.snap.list[i].snapshot_id,
 			fd);
 
 		asprintf(&subvol_paths[i], "/mnt/%s",
@@ -533,14 +539,17 @@ int check(int argc, char **argv)
 
 	for (size_t i = 0; i < capacity; i++) {
 		printf("snapshot id: %" PRIu64 "\n",
-			info.system.snap.list[i].snapshot_id);
+			info->system.snap.list[i].snapshot_id);
 
 		printf("snapshot path: %s\n",
 			snap_relative_path[i]);
 
 		struct kernel_list *k = NULL;
 
-		k = kernel_diff(&info.system.kern, kern_list_array[i], KERN_P1);
+		k = kernel_diff(
+			&info->system.kern,
+			kern_list_array[i],
+			KERN_P1);
 
 		if (k->list == NULL) {
 			printf("No kernel mistmatch found for this snapshot\n");
@@ -577,8 +586,7 @@ int check(int argc, char **argv)
 		goto out;
 	}
 out:
-	free_system_info(info, SYS_INFO_SHOW);
-	for (size_t i = 0; i < info.system.snap.counts; i++) {
+	for (size_t i = 0; i < info->system.snap.counts; i++) {
 		free(subvol_paths[i]);
 		free(snap_relative_path[i]);
 
@@ -586,6 +594,8 @@ out:
 
 		free(kern_list_array[i]);
 	}
+
+	free_system_info(info, flags);
 
 	free(subvol_paths);
 	free(kern_list_array);

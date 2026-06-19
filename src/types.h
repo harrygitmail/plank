@@ -1,4 +1,5 @@
 #pragma once
+#include <stdio.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -84,12 +85,20 @@ struct system_mount_info {
 	};
 };
 
+#define SYSINFO_EB	(1 << 0)
+#define SYSINFO_SYS	(1 << 1)
+#define SYSINFO_OS_REL	(1 << 2)
+#define SYSINFO_LDER	(1 << 3)
+
 struct system_info {
 
 	struct {
 
-		char *entry_token;
-		char *boot_path;
+		struct {
+			char *entry_token;
+			char *boot_path;
+		} eb;
+
 		struct kernel_list kern;
 		struct snapshot_list snap;
 		struct system_mount_info mount_info;
@@ -105,7 +114,7 @@ struct system_info {
 
 	struct {
 
-		struct loader_entries entries;
+		struct loader_entries *entries;
 
 	} loader;
 

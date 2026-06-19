@@ -167,14 +167,14 @@ void link_loader_entries(
 	}
 
 
-enum plank_status pre_entrie(struct system_info s_info,
+enum plank_status pre_entrie(struct system_info *s_info,
 	struct loader_entrie_w **entrie_out)
 {
 	struct snapshot_list snap;
-	snap = s_info.system.snap;
+	snap = s_info->system.snap;
 
 	struct kernel_list kern;
-	kern = s_info.system.kern;
+	kern = s_info->system.kern;
 
 	int len;
 	enum plank_status ret = PLANK_OK;
@@ -189,7 +189,7 @@ enum plank_status pre_entrie(struct system_info s_info,
 		char date_time[32];
 
 		struct timespec snap_time;
-		snap_time = s_info.system.snap.list[i].snapshot_time;
+		snap_time = snap.list[i].snapshot_time;
 
 		localtime_r(&snap_time.tv_sec, &t);
 
@@ -223,33 +223,33 @@ enum plank_status pre_entrie(struct system_info s_info,
 			char *version = NULL;
 
 			len = asprintf(&filename, "snapshot-%s-%s-%ld.conf",
-				s_info.system.entry_token,
+				s_info->system.eb.entry_token,
 				kern.list[j].kernel_ver,
 				snap.list[i].snapshot_time.tv_sec);
 
 			ON_ERR_OUT(len, PLANK_ERR);
 
 			len = asprintf(&title, "snapshot %s %s %s",
-				s_info.os_release.pretty_name,
+				s_info->os_release.pretty_name,
 				date_time,
 				kern.list[j].kernel_ver);
 
 			ON_ERR_OUT(len, PLANK_ERR);
 
 			len = asprintf(&sort_key, "%s-%s",
-				s_info.os_release.id,
+				s_info->os_release.id,
 				kern.list[j].kernel_ver);
 
 			ON_ERR_OUT(len, PLANK_ERR);
 
 			len = asprintf(&path_to_kernel, "/%s/%s/linux",
-				s_info.system.entry_token,
+				s_info->system.eb.entry_token,
 				kern.list[j].kernel_ver);
 
 			ON_ERR_OUT(len, PLANK_ERR);
 
 			len = asprintf(&path_to_initrd, "/%s/%s/initrd",
-				s_info.system.entry_token,
+				s_info->system.eb.entry_token,
 				kern.list[j].kernel_ver);
 
 			ON_ERR_OUT(len, PLANK_ERR);
@@ -257,9 +257,9 @@ enum plank_status pre_entrie(struct system_info s_info,
 			len = asprintf(&options,
 				"root=UUID=%s rw rootflags=subvolid=%" PRIu64
 				" loglevel=3 quiet systemd.machine_id=%s",
-				s_info.system.mount_info.uuid,
+				s_info->system.mount_info.uuid,
 				snap.list[i].snapshot_id,
-				s_info.system.entry_token);
+				s_info->system.eb.entry_token);
 
 			ON_ERR_OUT(len, PLANK_ERR);
 
@@ -271,7 +271,7 @@ enum plank_status pre_entrie(struct system_info s_info,
 			(*entrie_out)[n].filename = filename;
 			(*entrie_out)[n].title = title;
 			(*entrie_out)[n].version = version;
-			(*entrie_out)[n].machine_id = s_info.system.entry_token;
+			(*entrie_out)[n].machine_id = s_info->system.eb.entry_token;
 			(*entrie_out)[n].sort_key = sort_key;
 			(*entrie_out)[n].options = options;
 			(*entrie_out)[n].kernel = path_to_kernel;
