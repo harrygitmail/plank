@@ -24,28 +24,49 @@ int show_host_info(int argc, char **argv)
 	int flags = (SYSINFO_EB | SYSINFO_OS_REL | SYSINFO_SYS);
 
 	info = get_system_info(flags);
-
-	if (info->status == PLANK_ERR) {
+	switch (info->status) {
+	case PLANK_ERR:
 		fprintf(stderr, "something went wrong!!\n");
 		status = info->status;
 		goto out;
-	}
 
-	if (info->status == PLANK_LIBMOUNT_ERR) {
+	case PLANK_LIBMOUNT_ERR:
 		fprintf(stderr, "libmount operation failed!\n");
 		status = info->status;
 		goto out;
-	}
 
-	if (info->status == PLANK_BOOT_NOT_FOUND) {
+	case PLANK_LIBBLKID_ERR:
+		fprintf(stderr, "libblkid operation failed!\n");
+		status = info->status;
+		goto out;
+
+	case PLANK_BOOT_NOT_FOUND:
 		fprintf(stderr, "Unable to find $BOOT. is it mounted corectly ?\n");
 		status = info->status;
 		goto out;
-	}
 
-	if (info->system.snap.counts == 0) {
-		fprintf(stdout, "NO snapshot found\n\n");
+	case PLANK_PARM_ERR:
+		fprintf(stderr, "permission denied !\n");
+		status = info->status;
+		goto out;
+
+	case PLANK_BTRFS_NO_SNAPSHOT_FOUND:
+		fprintf(stderr, "NO snapshot found\n");
+		status = info->status;
 		goto show_kern;
+
+	case PLANK_BTRFS_ERR_NOT_BTRFS:
+		fprintf(stderr, "root filesystem is not btrfs\n");
+		status = info->status;
+		goto out;
+
+	case PLANK_BTRFS_ERR:
+		fprintf(stderr, "libbtrfsutil operation failed!\n");
+		status = info->status;
+		goto out;
+
+	case PLANK_OK:
+		break;
 	}
 
 	printf("following snapshot found\n");
@@ -57,7 +78,6 @@ int show_host_info(int argc, char **argv)
 	printf("\n");
 
 show_kern:
-
 	if (info->system.kern.counts == 0) {
 		fprintf(stdout, "NO kernel found\n\n");
 		goto show_next;
@@ -72,17 +92,15 @@ show_kern:
 
 	printf("\n");
 
-
 show_next:
-
 	printf("----------------------------------------------\n");
 	printf("system info:\n\n");
 
-	printf("entry-token: 	%s\n", info->system.eb.entry_token);
-	printf("$BOOT: 		%s\n", info->system.eb.boot_path);
-	printf("pretty name:	%s\n", info->os_release.pretty_name);
-	printf("ID: 		%s\n", info->os_release.id);
-	printf("UUID: 		%s\n", info->system.mount_info.uuid);
+	printf("entry-token	: %s\n", info->system.eb.entry_token);
+	printf("$BOOT		: %s\n", info->system.eb.boot_path);
+	printf("pretty name	: %s\n", info->os_release.pretty_name);
+	printf("ID		: %s\n", info->os_release.id);
+	printf("UUID		: %s\n", info->system.mount_info.uuid);
 
 	
 out:
@@ -101,28 +119,49 @@ int make_entrie(int argc, char **argv)
 	int flags = (SYSINFO_EB | SYSINFO_SYS | SYSINFO_OS_REL | SYSINFO_LDER);
 
 	info = get_system_info(flags);
-
-	if (info->status == PLANK_ERR) {
+	switch (info->status) {
+	case PLANK_ERR:
 		fprintf(stderr, "something went wrong!!\n");
 		status = info->status;
 		goto out;
-	}
 
-	if (info->status == PLANK_LIBMOUNT_ERR) {
+	case PLANK_LIBMOUNT_ERR:
 		fprintf(stderr, "libmount operation failed!\n");
 		status = info->status;
 		goto out;
-	}
 
-	if (info->status == PLANK_BOOT_NOT_FOUND) {
+	case PLANK_LIBBLKID_ERR:
+		fprintf(stderr, "libblkid operation failed!\n");
+		status = info->status;
+		goto out;
+
+	case PLANK_BOOT_NOT_FOUND:
 		fprintf(stderr, "Unable to find $BOOT. is it mounted corectly ?\n");
 		status = info->status;
 		goto out;
-	}
 
-	if (info->system.snap.counts == 0) {
-		fprintf(stdout, "NO snapshot found\n\n");
+	case PLANK_PARM_ERR:
+		fprintf(stderr, "permission denied !\n");
+		status = info->status;
 		goto out;
+
+	case PLANK_BTRFS_NO_SNAPSHOT_FOUND:
+		fprintf(stderr, "NO snapshot found\n");
+		status = info->status;
+		goto out;
+
+	case PLANK_BTRFS_ERR_NOT_BTRFS:
+		fprintf(stderr, "root filesystem is not btrfs\n");
+		status = info->status;
+		goto out;
+
+	case PLANK_BTRFS_ERR:
+		fprintf(stderr, "libbtrfsutil operation failed!\n");
+		status = info->status;
+		goto out;
+
+	case PLANK_OK:
+		break;
 	}
 
 	int p;
@@ -195,7 +234,7 @@ int clean(int argc , char **argv) {
 		goto out;
 	}
 
-	ret = get_snapshot_list(tar_subvol_fd, &tar_subvol_snap_info);
+	ret = get_snap_ls(tar_subvol_fd, &tar_subvol_snap_info);
 
 	if(ret == PLANK_BTRFS_NO_SNAPSHOT_FOUND) {
 		printf("no snapshot found\n");
@@ -481,30 +520,50 @@ int check(int argc, char **argv)
 	int flags = (SYSINFO_EB | SYSINFO_SYS);
 
 	info = get_system_info(flags);
-
-	if (info->status == PLANK_ERR) {
+	switch (info->status) {
+	case PLANK_ERR:
 		fprintf(stderr, "something went wrong!!\n");
 		status = info->status;
 		goto out;
-	}
 
-	if (info->status == PLANK_LIBMOUNT_ERR) {
+	case PLANK_LIBMOUNT_ERR:
 		fprintf(stderr, "libmount operation failed!\n");
 		status = info->status;
 		goto out;
-	}
 
-	if (info->status == PLANK_BOOT_NOT_FOUND) {
+	case PLANK_LIBBLKID_ERR:
+		fprintf(stderr, "libblkid operation failed!\n");
+		status = info->status;
+		goto out;
+
+	case PLANK_BOOT_NOT_FOUND:
 		fprintf(stderr, "Unable to find $BOOT. is it mounted corectly ?\n");
 		status = info->status;
 		goto out;
-	}
 
-	if (info->system.snap.counts == 0) {
-		fprintf(stdout, "NO snapshot found\n\n");
+	case PLANK_PARM_ERR:
+		fprintf(stderr, "permission denied !\n");
+		status = info->status;
 		goto out;
-	}
 
+	case PLANK_BTRFS_NO_SNAPSHOT_FOUND:
+		fprintf(stderr, "NO snapshot found\n");
+		status = info->status;
+		goto out;
+
+	case PLANK_BTRFS_ERR_NOT_BTRFS:
+		fprintf(stderr, "root filesystem is not btrfs\n");
+		status = info->status;
+		goto out;
+
+	case PLANK_BTRFS_ERR:
+		fprintf(stderr, "libbtrfsutil operation failed!\n");
+		status = info->status;
+		goto out;
+
+	case PLANK_OK:
+		break;
+	}
 	enum plank_status ret ;
 
 	ret = mount_top_subvol(info->system.mount_info, "/mnt");
@@ -612,7 +671,6 @@ int ls_subvol(int argc, char **argv)
 	}
 
 	char *tar_fs = argv[1];
-	char *op = argv[2];
 
 	int btrfs = open(tar_fs, O_RDONLY);
 	if (btrfs == -1) {
@@ -628,19 +686,26 @@ int ls_subvol(int argc, char **argv)
 	struct bnode *head = NULL;
 
 	enum plank_status ret = get_subvol_list(&subvol_ls, btrfs);
-	if (ret == PLANK_BTRFS_ERR_NOT_BTRFS) {
-		fprintf(stderr, "%s is not btrfs filesystem\n", tar_fs);
-		close(btrfs);
-		return ret;
-	}
+	switch (ret) {
 
-	if (ret == PLANK_BTRFS_ERR) {
+	case PLANK_BTRFS_ERR_NOT_BTRFS:
+		fprintf(stderr, "%s is not btrfs filesystem\n", tar_fs);
+		goto out;
+
+	case PLANK_PARM_ERR:
+		fprintf(stderr, "permission denied!\n");
+		goto out;
+
+	case PLANK_BTRFS_ERR:
 		fprintf(stderr, "btrfs operation failed\n");
-		close(btrfs);
-		return -3;
+		goto out;
+
+	case PLANK_OK:
+		break;
 	}
 
 	if (argc > 2 ) {
+		char *op = argv[2];
 		if (strcmp(op, "-t") == 0)
 			goto show_tree;
 
