@@ -18,6 +18,7 @@ enum plank_status {
 	PLANK_LIBBLKID_ERR,
 	PLANK_BOOT_NOT_FOUND,
 	PLANK_NO_ENTRY,
+	PLANK_PARM_ERR,
 };
 
 struct snapshot_info{
