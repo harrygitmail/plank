@@ -1,5 +1,6 @@
 #include <fcntl.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include "btrfs.h"
 #include "common.h"
@@ -58,7 +59,7 @@ eb:
 			goto out;
 		}
 
-		ret = get_snapshot_list(tar_subvol_fd, &snap);
+		ret = get_snap_ls(tar_subvol_fd, &snap);
 		if (ret != PLANK_OK)
 			goto out;
 

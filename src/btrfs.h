@@ -12,7 +12,7 @@
  */
 
 /* *
- * get_snapshot_list - get list of snapshot_info
+ * get_snap_ls - get list of snapshot_info
  * @tar_subvol_fd: fd of opened path that point to target subvolume.
  * @ret: pointer to snapshot_info.
  *
