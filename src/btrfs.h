@@ -24,7 +24,7 @@
  * memory leaks.
  */
 
-enum plank_status get_snapshot_list(
+enum plank_status get_snap_ls(
 	int tar_subvol_fd, 
 	struct snapshot_list *ret);
 
