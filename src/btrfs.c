@@ -148,21 +148,31 @@ char *get_subvol_path(uint64_t id, int fd) {
 
 enum plank_status get_subvol_list(struct subvol_list *ret, int fd)
 {
-	enum btrfs_util_error b_ret;
+	enum btrfs_util_error b_ret = BTRFS_UTIL_OK;
+	enum plank_status p_ret = PLANK_OK;
 
 	b_ret = btrfs_util_is_subvolume_fd(fd);
-
-	if (b_ret == BTRFS_UTIL_ERROR_NOT_BTRFS)
-		return PLANK_BTRFS_ERR_NOT_BTRFS;
-
-	if (b_ret != BTRFS_UTIL_OK)
-		return PLANK_BTRFS_ERR;
+	if (b_ret != BTRFS_UTIL_OK) {
+		/**
+		 * even if fd do not refer to subvolume
+		 * we can still use it to list subvolumes
+		 * as we only need fd that refer to
+		 * valid btrfs filesystem
+		 */
+		if (b_ret != BTRFS_UTIL_ERROR_NOT_SUBVOLUME)
+			return map_btfs_to_plank(b_ret);
+	}
 
 	struct btrfs_util_subvolume_iterator *subvol_iter = NULL;
-	b_ret = btrfs_util_subvolume_iter_create_fd(fd, 5, 0, &subvol_iter);
 
-	if (b_ret != BTRFS_UTIL_OK)
-		return PLANK_BTRFS_ERR;
+	errno = 0;
+	b_ret = btrfs_util_subvolume_iter_create_fd(fd, 5, 0, &subvol_iter);
+	if (b_ret != BTRFS_UTIL_OK) {
+		if (errno == EPERM)
+			return PLANK_PARM_ERR;
+
+		return map_btfs_to_plank(b_ret);
+	}
 
 	char *path;
 	struct btrfs_util_subvolume_info subvol_info;
@@ -171,10 +181,12 @@ enum plank_status get_subvol_list(struct subvol_list *ret, int fd)
 	size_t n = 0;
 
 	ret->subvols = malloc(sizeof(struct subvol_info) * capacity);
+	if (ret->subvols == NULL) {
+		p_ret = PLANK_MEM_ERR;
+		goto out;
+	}
 
-	if (ret->subvols == NULL)
-		return PLANK_MEM_ERR;
-
+	errno = 0;
 	while((b_ret = btrfs_util_subvolume_iter_next_info(
 		subvol_iter,
 		&path,
@@ -206,11 +218,21 @@ enum plank_status get_subvol_list(struct subvol_list *ret, int fd)
 
 	}
 
+	if (b_ret != BTRFS_UTIL_ERROR_STOP_ITERATION) {
+		if (errno == EPERM) {
+			p_ret = PLANK_PARM_ERR;
+			goto out;
+		}
+
+		p_ret =  map_btfs_to_plank(b_ret);
+		goto out;
+	}
+out:
 	btrfs_util_destroy_subvolume_iterator(subvol_iter);
 
 	ret->total = n;
 
-	return PLANK_OK;
+	return p_ret;
 }
 
 struct sub_ref *int_sub_ref(const struct subvol_list *ls)
