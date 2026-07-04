@@ -163,3 +163,48 @@ struct bnode {
 	struct bnode *dpdp_br;
 	struct bnode *leaf;
 };
+
+#define MAGIC_SIZE		0x8
+#define START_OFFSET		0x100
+
+typedef struct {
+	uint8_t magic[MAGIC_SIZE];
+	uint64_t version;
+} blob_header;
+
+struct index {
+	uint64_t start_off;
+	uint64_t last_off;
+	uint64_t total_data;
+};
+
+struct data {
+	uint64_t id;
+};
+
+struct bucket {
+	struct data *data;
+	size_t cap;
+	size_t read;
+	size_t write;
+};
+
+#define FILE_READ	(1 << 1)
+#define FILE_WRITE	(1 << 2)
+#define FILE_NEW	(1 << 3)
+
+struct pfile {
+	FILE *fp;
+	const char *nm;
+	const char *tmp;
+	struct index index;
+	struct bucket *pbuk;
+	int mode;
+};
+
+enum file_pos {
+	HEADER,
+	INDEX,
+	DATA_START,
+	DATA_END,
+};

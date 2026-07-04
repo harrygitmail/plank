@@ -16,6 +16,7 @@ command commands[] = {
 	{"show-entrie", show_entrie},
 	{"check", check},
 	{"list-subvol", ls_subvol},
+	{"blob", blob},
 	{NULL,NULL}
 };
 
@@ -29,7 +30,8 @@ void usage()
 		"clean:          remove unneccesary entrie\n"
 		"show-entrie:    info of entrie\n"
 		"check:          check kernel mismatch for snapshot\n"
-		"list-subvol:    list subvol info\n");
+		"list-subvol:    list subvol info\n"
+		"blob:		 store subvol data(id) to keep thier track\n");
 }
 
 int main(int argc, char **argv)

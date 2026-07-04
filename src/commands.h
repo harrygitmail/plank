@@ -22,3 +22,5 @@ int show_entrie(int argc, char **argv);
 int check(int argc, char **argv);
 
 int ls_subvol(int argc, char **argv);
+
+int blob(int argc, char **argv);

@@ -772,3 +772,30 @@ out:
 
 	return ret;
 }
+
+int blob(int argc, char **argv)
+{
+	if (argc < 2) {
+		fprintf(stderr, "%s: please provide command or use --help\n", argv[0]);
+		return -1;
+	}
+
+	char *cmd = argv[1];
+	if (strcmp(cmd, "--help") == 0) {
+		blob_usage();
+		return 1;
+	}
+
+	if (strcmp(cmd, "add") == 0)
+		return add(argc - 1, argv + 1);
+
+	if (strcmp(cmd, "show") == 0)
+		return show(argc - 1, argv + 1);
+
+	if (strcmp(cmd, "remove") == 0)
+		return rm(argc - 1, argv + 1);
+
+	fprintf(stderr, "'%s' unknown command\n", cmd);
+	blob_usage();
+	return 1;
+}
