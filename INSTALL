@@ -1,0 +1,38 @@
+requirements
+============
+- git
+- gcc compiler
+- meson
+- ninja
+- btrfs-progs (libbtrfsutil)
+- util-linux-libs (libblkid, libmount)
+
+building from source
+====================
+1. clone repo with git
+	git clone https://github.com/harrygitmail/plank.git
+
+2. change dir to project
+	cd ./plank/src/
+
+3. setup builddir
+	meson setup builddir
+
+4. compile plank
+	meson compile -C builddir
+
+installation
+============
+to install binary to your system
+	sudo meson install -C builddir
+
+it will install binary to standards-conforming location.
+
+to know more about meson refer to following link.
+https://mesonbuild.com/
+
+debugging
+========
+you can use your own debuging flow. i mostly use address senitizer and
+UB senitizer by applying options to build dir.
+	meson configure builldir -Db_sanitize=address,undefined
