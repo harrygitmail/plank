@@ -31,6 +31,9 @@ struct system_info *get_system_info(int flags)
 	struct loader_entries *entries = NULL;
 
 	struct system_mount_info mount_info;
+	mount_info.type = 0;
+	mount_info.source = NULL;
+	memset(mount_info.uuid, 0, 37);
 
 	struct system_info *ret_info = malloc(sizeof(struct system_info));
 	if (ret_info == NULL) {
@@ -93,7 +96,7 @@ eb:
 			goto out;
 
 	}
-
+out:
 	ret_info->system.eb.entry_token = entry_token;
 	ret_info->system.eb.boot_path = boot_path;
 	ret_info->system.kern = kern;
@@ -105,9 +108,8 @@ eb:
 
 	ret_info->loader.entries = entries;
 
-
-out:
-	if(tar_subvol_fd <! 0 ) close(tar_subvol_fd);
+	if (tar_subvol_fd <! 0 )
+		close(tar_subvol_fd);
 
 	ret_info->status = ret;
 	return ret_info;
