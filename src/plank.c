@@ -115,6 +115,9 @@ out:
 
 void free_system_info(struct system_info *info, int flags)
 {
+	if (info == NULL)
+		return;
+
 	if (flags & SYSINFO_EB) {
 		free(info->system.eb.entry_token);
 		free(info->system.eb.boot_path);
@@ -135,10 +138,16 @@ void free_system_info(struct system_info *info, int flags)
 	}
 
 	if (flags & SYSINFO_LDER) {
+		if (info->loader.entries == NULL)
+			goto free_info;
+
+		for (size_t i = 0; i < info->loader.entries->counts; i++)
+			free(info->loader.entries->entrie[i].file_name);
+
 		free(info->loader.entries->entrie);
 		free(info->loader.entries);
 	}
-
+free_info:
 	free(info);
 
 }

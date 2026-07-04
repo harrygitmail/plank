@@ -12,6 +12,12 @@
 struct loader_entries *list_loader_entries(const char *BOOT,
 	const char *entry_token)
 {
+	if (BOOT == NULL)
+		return NULL;
+
+	if (entry_token == NULL)
+		return NULL;
+
 	char *path_to_files = NULL;
 	struct loader_entrie *entries = NULL;
 	char *prefix = NULL;
@@ -45,9 +51,7 @@ struct loader_entries *list_loader_entries(const char *BOOT,
 	entries = malloc(sizeof(struct loader_entrie) * counts);
 
 	for (size_t i = 0; i < counts; i++) {
-
 		int c = strncmp(files[i], prefix, prefix_lenght);
-
 		if (c != 0) continue;
 
 		entries[c_line++].file_name = strdup(files[i]);
