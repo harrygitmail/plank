@@ -5,9 +5,7 @@
 /* get_entry_token - get entry token from host system.
  * 
  * @ret: pointer to entry token string. 
- *
  */
-
 
 enum plank_status get_entry_token(char **ret);
 
@@ -34,7 +32,6 @@ enum plank_status get_value_by_key(char **ret, const char *target);
 
 enum plank_status get_boot_path(char **ret);
 
-
 enum plank_status get_ker_ver_snap_tim(
 	char *file_name,
 	char *kernel_ver,
@@ -47,6 +44,5 @@ enum plank_status get_ker_ver_snap_tim(
 char **list_files(const char *path, int dirfd, size_t  *const count);
 
 void free_file_list(char **const p, size_t counts);
-
 
 void printf_uuid(uint8_t uuid[16]);

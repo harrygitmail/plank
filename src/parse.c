@@ -36,7 +36,6 @@ static char **read_file(FILE *file)
 			line_count = new_line_count;
 		}
 
-
 		nread = getline(&buffer, &buffer_size, file);
 		if(nread == -1) {
 			lines[c_line] = NULL;
