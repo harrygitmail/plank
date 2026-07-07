@@ -1,5 +1,6 @@
 #include <btrfsutil.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -477,4 +478,28 @@ next:
 	ptree(node->smdp_br, depth);
 
 
+}
+
+uint64_t get_id(int fd)
+{
+	uint64_t ret;
+	enum btrfs_util_error err;
+
+	errno = 0;
+	err = btrfs_util_subvolume_get_id_fd(fd, &ret);
+	if (err < 0) {
+		ret = 0;
+		goto fail;
+	}
+
+	goto out;
+
+fail:
+	if (errno != 0)
+		perror("get_id(libbtrfsutil ioctl)");
+
+	fprintf(stderr, "get_id(libbtrfsutil): %s\n", btrfs_util_strerror(err));
+
+out:
+	return ret;
 }

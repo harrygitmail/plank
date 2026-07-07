@@ -44,3 +44,5 @@ void free_tree(struct bnode *node);
 struct bnode *tree(struct sub_ref *ref, size_t total);
 
 void ptree(struct bnode *node, int depth);
+
+uint64_t get_id(int fd);

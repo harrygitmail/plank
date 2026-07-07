@@ -685,6 +685,8 @@ int ls_subvol(int argc, char **argv)
 	struct sub_ref *ref = NULL;
 	struct bnode *head = NULL;
 
+	uint64_t root_id = 0;
+	int root_fd = -1;
 	enum plank_status ret = get_subvol_list(&subvol_ls, btrfs);
 	switch (ret) {
 
@@ -742,7 +744,7 @@ int ls_subvol(int argc, char **argv)
 
 	}
 
-	goto out;
+	goto show_root;
 
 show_tree:
 
@@ -763,9 +765,30 @@ show_tree:
 
 	ptree(head, 0);
 
+show_root:
+
+	root_fd = open("/", O_RDONLY);
+	if (root_fd == -1) {
+		perror("ls_subvol(open)");
+		ret = -1;
+		goto out;
+	}
+
+	root_id = get_id(root_fd);
+	if (root_id == 0) {
+		fprintf(stderr, "ls_subvol:could not find root id\n");
+		ret = -1;
+		goto out;
+	}
+
+	printf("root subvolume id : %" PRIu64 "\n", root_id);
+
 out:
 	free(subvol_ls.subvols);
 	close(btrfs);
+	if (root_fd <! 0)
+		close(root_fd);
+
 	free(ref);
 
 	free_tree(head);
