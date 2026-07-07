@@ -1490,6 +1490,65 @@ out:
 	return ret;
 }
 
+/**
+ * it expose functionality while keeping most
+ * function static
+ */
+
+extern int merge_buk(
+	struct bucket *buk1,
+	struct bucket *buk2,
+	struct bucket **ret)
+{
+	*ret = do_bucket(buk1, buk2, BUK_MERGE);
+	if (*ret == NULL)
+		return -1;
+
+	return 0;
+}
+
+extern int get_blob_data(struct bucket **buk_ret)
+{
+	const char *home = getenv("HOME");
+	if (home == NULL) {
+		fprintf(stderr, "$HOME environment variable is not set !\n"
+				"can not show data\n");
+		return -1;
+	}
+
+	char *path_to_file = NULL;
+	struct pfile *file = NULL;
+	struct bucket *buk = NULL;
+
+	int ret = asprintf(&path_to_file, "%s/pblob", home);
+	if (ret == -1)
+		goto out;
+
+	ret = 0;
+	file = op_pfile(path_to_file, FILE_READ);
+	if (file == NULL) {
+		ret = -1;
+		goto out;
+	}
+
+	ret = read_data(&buk, file);
+	if (ret == -1)
+		goto out;
+
+out:
+	if (ret == -1) {
+		empty_bucket(buk);
+		buk = NULL;
+	}
+
+	cls_pfile(file);
+	free(path_to_file);
+	*buk_ret = buk;
+
+	return ret;
+
+}
+
 void blob_usage()
 {
 	printf("plank blob:\n"
