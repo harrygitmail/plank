@@ -236,10 +236,36 @@ int clean(int argc , char **argv) {
 
 	ret = get_snap_ls(tar_subvol_fd, &tar_subvol_snap_info);
 
-	if(ret == PLANK_BTRFS_NO_SNAPSHOT_FOUND) {
-		printf("no snapshot found\n");
+	switch (ret) {
+	case PLANK_BTRFS_ERR_NOT_BTRFS:
+		fprintf(stderr, "root filesystem is not btrfs filesystem\n");
+		goto out;
+
+	case PLANK_BTRFS_ERR:
+		fprintf(stderr, "btrfs operation failed\n");
+		goto out;
+
+	case PLANK_PARM_ERR:
+		fprintf(stderr, "permission defined !\n");
+		goto out;
+
+	case PLANK_BTRFS_NO_SNAPSHOT_FOUND:
+		fprintf(stderr, "NO snapshot found\n");
 		goto clean_all;
+
+	case PLANK_MEM_ERR:
+		fprintf(stderr, "system running on low memory\n");
+		goto out;
+
+	case PLANK_OK:
+		goto get_kern_list;
+
+	default:
+		fprintf(stderr, "something went wrong (code: %d)\n", ret);
+		goto out;
 	}
+
+get_kern_list:
 
 	ret = get_kernel_list(&host, "/");
 	if(ret == PLANK_ERR) goto out;
