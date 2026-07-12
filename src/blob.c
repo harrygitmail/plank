@@ -392,6 +392,8 @@ static int read_data(struct bucket **buk, struct pfile *file)
 	if (ret == -1)
 		goto fail;
 
+	(*buk)->type = BUK_TYPE_DATA;
+
 	ret = set_at(file, DATA_START);
 	if (ret == -1)
 		goto fail;

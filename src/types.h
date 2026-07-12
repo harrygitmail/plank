@@ -182,8 +182,18 @@ struct data {
 	uint64_t id;
 };
 
+#define BUK_TYPE_DATA 	0x0aa
+#define BUK_TYPE_SNAP 	0x0ab
+#define BUK_TYPE_SUBV 	0x0ac
+
 struct bucket {
-	struct data *data;
+	int type;
+	union {
+		struct data *data;
+		struct snapshot_info *snapls;
+		struct subvol_info *subvols;
+	};
+	int fs_fd;
 	size_t cap;
 	size_t read;
 	size_t write;
