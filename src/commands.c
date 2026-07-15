@@ -19,8 +19,9 @@
 int show_host_info(int argc, char **argv)
 {
 	struct system_info *info = NULL;
-	int status = 0;
+	struct bucket *snap_buk = NULL;
 
+	int status = 0;
 	int flags = (SYSINFO_EB | SYSINFO_OS_REL | SYSINFO_SYS);
 
 	info = get_system_info(flags);
@@ -77,6 +78,26 @@ int show_host_info(int argc, char **argv)
 
 	printf("\n");
 
+	/**
+	 * data stored in blob is also beeing tracked
+	 * so it will good to let user know which
+	 * subvolume ids they have been tracking
+	 */
+	status = get_blob_data(&snap_buk);
+	if (status == -1) {
+		fprintf(stderr, "failed to read data from binary blob\n");
+		fprintf(stderr, "continue other operation\n");
+		goto show_kern;
+	}
+
+	status = 0;
+
+	printf("following are subvolume been tracked\n");
+	for (snap_buk->read = 0; snap_buk->read < snap_buk->write; snap_buk->read++)
+		printf("id :%" PRIu64 "\n", snap_buk->data[snap_buk->read].id);
+
+	printf("\n");
+
 show_kern:
 	if (info->system.kern.counts == 0) {
 		fprintf(stdout, "NO kernel found\n\n");
@@ -104,6 +125,7 @@ show_next:
 
 	
 out:
+	empty_buk(snap_buk);
 	free_system_info(info, flags);
 	return status;
 }
