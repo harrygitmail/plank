@@ -75,15 +75,17 @@ struct loader_entries {
 	int status;
 };
 
-#define SYS_MNT_UUID 	1
-#define SYS_MNT_SOURCE	2
+#define MNT_UUID 	0xee
+#define MNT_PATH	0xff
 
-struct system_mount_info {
+struct mount_info {
 	int type;
+	size_t use;
 	union {
-		char uuid[37];
+		char sur_uuid[37];
 		char *source;
 	};
+	char *target;
 };
 
 #define SYSINFO_EB	(1 << 0)
@@ -102,7 +104,7 @@ struct system_info {
 
 		struct kernel_list kern;
 		struct snapshot_list snap;
-		struct system_mount_info mount_info;
+		struct mount_info mount_info;
 
 	} system;
 

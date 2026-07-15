@@ -121,7 +121,7 @@ show_next:
 	printf("$BOOT		: %s\n", info->system.eb.boot_path);
 	printf("pretty name	: %s\n", info->os_release.pretty_name);
 	printf("ID		: %s\n", info->os_release.id);
-	printf("UUID		: %s\n", info->system.mount_info.uuid);
+	printf("UUID		: %s\n", info->system.mount_info.sur_uuid);
 
 	
 out:
@@ -563,6 +563,7 @@ int check(int argc, char **argv)
 	int status = 0;
 	char **subvol_paths = NULL;
 	char **snap_relative_path = NULL;
+	char *mnt_p = NULL;
 	struct kernel_list **kern_list_array = NULL;
 
 	int flags = (SYSINFO_EB | SYSINFO_SYS);
@@ -614,7 +615,13 @@ int check(int argc, char **argv)
 	}
 	enum plank_status ret ;
 
-	ret = mount_top_subvol(info->system.mount_info, "/mnt");
+	mnt_p = strdup("/mnt");
+	if (mnt_p == NULL) {
+		status = PLANK_MEM_ERR;
+		goto out;
+	}
+
+	ret = mount_top_subvol(&info->system.mount_info, mnt_p);
 
 	if (ret != PLANK_OK) {
 		fprintf(stderr, "something went wrong");
@@ -627,7 +634,7 @@ int check(int argc, char **argv)
 	kern_list_array = malloc(sizeof(struct kernel_list *) * capacity);
 	snap_relative_path = malloc(sizeof(char *) * capacity);
 
-	int fd = open("/mnt", O_RDONLY);
+	int fd = open(mnt_p, O_RDONLY);
 	if (fd < 0) goto out;
 
 	for (size_t i = 0; i < info->system.snap.counts; i++) {
@@ -687,7 +694,7 @@ int check(int argc, char **argv)
 
 	close(fd);
 
-	ret = umount_top_subvol("/mnt");
+	ret = mnt_no_need_now(&info->system.mount_info);
 	if (ret == PLANK_LIBMOUNT_ERR) {
 		fprintf(stderr, "libmount operation failed");
 		goto out;
@@ -703,7 +710,6 @@ out:
 	}
 
 	free_system_info(info, flags);
-
 	free(subvol_paths);
 	free(kern_list_array);
 	free(snap_relative_path);

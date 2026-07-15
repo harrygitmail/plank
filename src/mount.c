@@ -39,9 +39,9 @@ out:
 	return value;
 
 }
-enum plank_status get_mount_info(
+enum plank_status get_root_mount_info(
 	int type,
-	struct system_mount_info *ret)
+	struct mount_info *ret)
 {
 	enum plank_status f_ret = PLANK_OK;
 
@@ -75,20 +75,20 @@ enum plank_status get_mount_info(
 	}
 
 	switch (type) {
-	case SYS_MNT_UUID:
+	case MNT_UUID:
 		target_uuid = resolve_mount_tag(fs, tag);
 		if (target_uuid == NULL) {
 			f_ret = PLANK_MEM_ERR;
 			goto out;
 		}
 
-		strcpy(ret->uuid, target_uuid);
+		strcpy(ret->sur_uuid, target_uuid);
 
-		ret->type = SYS_MNT_UUID;
+		ret->type = MNT_UUID;
 
 		break;
 
-	case SYS_MNT_SOURCE:
+	case MNT_PATH:
 		source = (char *) mnt_fs_get_source(fs);
 		if (source == NULL) {
 			f_ret = PLANK_ERR;
@@ -102,6 +102,7 @@ enum plank_status get_mount_info(
 
 
 out:
+	ret->use = 0;
 	mnt_unref_table(tb);
 	free(target_uuid);
 
@@ -109,8 +110,8 @@ out:
 }
 
 enum plank_status mount_top_subvol(
-	struct system_mount_info mount_info,
-	const char *target)
+	struct mount_info *mount_info,
+	char *target)
 {
 	int err;
 	struct libmnt_context *mount_context = NULL;
@@ -119,10 +120,11 @@ enum plank_status mount_top_subvol(
 	enum plank_status ret = PLANK_OK;
 
 	const char *mount_options = "ro,subvolid=5";
+	mount_info->target = target;
 	mount_context = mnt_new_context();
 
-	if (mount_info.type == SYS_MNT_UUID) {
-		err = asprintf(&str_uuid, "UUID=%s", mount_info.uuid);
+	if (mount_info->type == MNT_UUID) {
+		err = asprintf(&str_uuid, "UUID=%s", mount_info->sur_uuid);
 
 		if (err == -1) {
 			ret = PLANK_MEM_ERR;
@@ -138,7 +140,7 @@ enum plank_status mount_top_subvol(
 
 	} else {
 
-		err = mnt_context_set_source(mount_context, mount_info.source);
+		err = mnt_context_set_source(mount_context, mount_info->source);
 
 		if (err < 0) {
 			ret = PLANK_LIBMOUNT_ERR;
@@ -168,14 +170,17 @@ enum plank_status mount_top_subvol(
 		goto out;
 	}
 
+	mount_info->use = mount_info->use + 1;
+	mount_info->target = target;
+
 out:
 	mnt_free_context(mount_context);
 	free(str_uuid);
 	return ret;
 }
 
-enum plank_status umount_top_subvol(
-	const char *target)
+enum plank_status _umount(
+	char *target)
 {
 	struct libmnt_context *mount_context = NULL;
 	int tmp_ret;
@@ -202,4 +207,23 @@ enum plank_status umount_top_subvol(
 out:
 	mnt_free_context(mount_context);
 	return ret;
+}
+
+enum plank_status mnt_no_need_now(struct mount_info *info)
+{
+	info->use = info->use - 1;
+
+	if (info->use > 0)
+		return PLANK_OK;
+
+	return _umount(info->target);
+}
+
+void free_mnt_info(struct mount_info info)
+{
+	if (info.type == MNT_PATH) {
+		free(info.source);
+	}
+
+	free(info.target);
 }

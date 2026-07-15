@@ -30,10 +30,9 @@ struct system_info *get_system_info(int flags)
 
 	struct loader_entries *entries = NULL;
 
-	struct system_mount_info mount_info;
+	struct mount_info mount_info;
 	mount_info.type = 0;
-	mount_info.source = NULL;
-	memset(mount_info.uuid, 0, 37);
+	memset(mount_info.sur_uuid, 0, 37);
 
 	struct system_info *ret_info = malloc(sizeof(struct system_info));
 	if (ret_info == NULL) {
@@ -66,7 +65,7 @@ eb:
 		if (ret != PLANK_OK)
 			goto out;
 
-		ret = get_mount_info(SYS_MNT_UUID, &mount_info);
+		ret = get_root_mount_info(MNT_UUID, &mount_info);
 		if (ret != PLANK_OK)
 			goto out;
 
@@ -129,9 +128,7 @@ void free_system_info(struct system_info *info, int flags)
 		free(info->system.kern.list);
 		free(info->system.snap.list);
 
-		if (info->system.mount_info.type == SYS_MNT_SOURCE)
-			free(info->system.mount_info.source);
-
+		free_mnt_info(info->system.mount_info);
 	}
 
 	if (flags & SYSINFO_OS_REL) {

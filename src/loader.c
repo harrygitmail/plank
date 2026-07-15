@@ -261,7 +261,7 @@ enum plank_status pre_entrie(struct system_info *s_info,
 			len = asprintf(&options,
 				"root=UUID=%s rw rootflags=subvolid=%" PRIu64
 				" loglevel=3 quiet systemd.machine_id=%s",
-				s_info->system.mount_info.uuid,
+				s_info->system.mount_info.sur_uuid,
 				snap.list[i].snapshot_id,
 				s_info->system.eb.entry_token);
 
