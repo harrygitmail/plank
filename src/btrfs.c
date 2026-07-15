@@ -503,3 +503,17 @@ fail:
 out:
 	return ret;
 }
+
+int get_sub_time(int fd, uint64_t id, struct timespec *tm)
+{
+	struct btrfs_util_subvolume_info subvol_info;
+	enum btrfs_util_error err;
+
+	err = btrfs_util_subvolume_get_info_fd(fd, id, &subvol_info);
+	if (err < 0)
+		return err;
+
+	*tm = subvol_info.otime;
+
+	return 0;
+}

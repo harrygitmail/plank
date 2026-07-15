@@ -46,3 +46,5 @@ struct bnode *tree(struct sub_ref *ref, size_t total);
 void ptree(struct bnode *node, int depth);
 
 uint64_t get_id(int fd);
+
+int get_sub_time(int fd, uint64_t id, struct timespec *tm);
