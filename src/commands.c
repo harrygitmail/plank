@@ -840,7 +840,8 @@ show_root:
 
 out:
 	free(subvol_ls.subvols);
-	close(btrfs);
+	if (btrfs <! 0)
+		close(btrfs);
 	if (root_fd <! 0)
 		close(root_fd);
 
