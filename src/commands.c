@@ -12,6 +12,7 @@
 #include "btrfs.h"
 #include "write.h"
 #include "blob.h"
+#include "buk.h"
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
