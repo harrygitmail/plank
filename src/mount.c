@@ -151,20 +151,24 @@ enum plank_status mount_top_subvol(
 
 	enum plank_status ret = PLANK_OK;
 
-	const char *mount_options = "ro,subvolid=5";
+	/**
+	 * for now mounting it read-write for blob access and writing
+	 *
+	 * FIX ME: implement function that explicitly set option on
+	 * 	   mount_info object.
+	 */
+	const char *mount_options = "rw,subvolid=5";
 	mount_info->target = target;
 	mount_context = mnt_new_context();
 
 	if (mount_info->type == MNT_UUID) {
 		err = asprintf(&str_uuid, "UUID=%s", mount_info->sur_uuid);
-
 		if (err == -1) {
 			ret = PLANK_MEM_ERR;
 			goto out;
 		}
 
 		err = mnt_context_set_source(mount_context, str_uuid);
-
 		if (err < 0) {
 			fprintf(stderr,
 				"mount_top_subvol: "
