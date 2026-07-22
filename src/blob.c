@@ -1,3 +1,5 @@
+#include "common.h"
+#include "mount.h"
 #include "types.h"
 #include "blob.h"
 #include <stddef.h>
@@ -103,6 +105,9 @@ options option[] = {
 static int is_flag(int flag);
 static int enable_flag(char **argv);
 static int have_flag_prefix(char *p);
+
+static enum plank_status get_blob_path(char **p);
+static enum plank_status done_with_path();
 
 static int set_at(struct pfile *file, enum file_pos pos)
 {
@@ -1250,20 +1255,17 @@ check_null:
 
 static int show_def()
 {
-	const char *home = getenv("HOME");
-	if (home == NULL) {
-		fprintf(stderr, "$HOME environment variable is not set !\n"
-				"can not show data\n");
-		return -1;
-	}
-
 	char *path_to_file = NULL;
 	struct pfile *file = NULL;
 	struct bucket *buk = NULL;
 
-	int ret = asprintf(&path_to_file, "%s/pblob", home);
-	if (ret == -1)
+	int ret;
+	enum plank_status pret;
+	pret = get_blob_path(&path_to_file);
+	if (pret != PLANK_OK) {
+		ret = (int) pret;
 		goto out;
+	}
 
 	ret = 0;
 
@@ -1293,9 +1295,83 @@ out:
 	 * specific action require to take
 	 * just report it back to caller
 	 */
-	ret = cls_pfile(file);
+	if (cls_pfile(file))
+		ret = -1;
+
+	pret = done_with_path();
+	ret = (int) pret;
+
 	empty_bucket(buk);
 	free(path_to_file);
+	return ret;
+}
+
+static struct mount_info btrfs_top_subvol_mnt = {
+	.sur_uuid = {0},
+	.target = NULL,
+	.type = MNT_UUID,
+};
+
+const char *blob_file_name = "pblob";
+char *mnt_target = NULL;
+
+static enum plank_status prep_mnt()
+{
+	enum plank_status ret = PLANK_OK;
+
+	mnt_target = strdup("/mnt");
+	if (mnt_target == NULL) {
+		ret = PLANK_MEM_ERR;
+		goto fail;
+	}
+
+	ret = get_root_mount_info(MNT_UUID, &btrfs_top_subvol_mnt);
+	if (ret != PLANK_OK)
+		goto fail;
+
+	ret = mount_top_subvol(&btrfs_top_subvol_mnt, mnt_target);
+	if (ret != PLANK_OK)
+		goto fail;
+
+	goto out;
+fail:
+	fprintf(stderr, "prep_mnt: failed to prepare mount\n");
+	mnt_no_need_now(&btrfs_top_subvol_mnt);
+	free_mnt_info(btrfs_top_subvol_mnt);
+out:
+	return ret;
+}
+
+static enum plank_status done_with_path()
+{
+	enum plank_status pret = PLANK_OK;
+	pret =  mnt_no_need_now(&btrfs_top_subvol_mnt);
+	if (pret != PLANK_OK)
+		fprintf(stderr,
+			"done_with_path: "
+			"unable to umount top level subvolume\n");
+
+	return pret;
+}
+
+static enum plank_status get_blob_path(char **p)
+{
+	enum plank_status ret = PLANK_OK;
+	int tmpint = 0;
+
+	ret = prep_mnt();
+	if (ret != PLANK_OK)
+		goto out;
+
+	tmpint = asprintf(p, "%s/%s", mnt_target, blob_file_name);
+	if (tmpint < 0)
+		ret = PLANK_MEM_ERR;
+
+out:
+	if (ret != PLANK_OK)
+		fprintf(stderr,
+			"get_blob_path: "
+			"failed to get path of blob\n");
 	return ret;
 }
 
@@ -1329,16 +1405,12 @@ int add(int argc, char **argv)
 		goto out;
 	}
 
-	const char *home = getenv("HOME");
-	if (home == NULL) {
-		fprintf(stderr, "$HOME environment is not set !\n"
-				"can not show data\n");
+	enum plank_status pret = PLANK_OK;
+	pret = get_blob_path(&path_to_file);
+	if (pret != PLANK_OK) {
+		ret = (int) pret;
 		goto out;
 	}
-
-	ret = asprintf(&path_to_file, "%s/pblob", home);
-	if (ret == -1)
-		goto out;
 
 	ret = access(path_to_file, F_OK);
 	if (ret == 0) {
@@ -1393,6 +1465,9 @@ out:
 		empty_bucket(buk_w);
 	}
 
+	pret = done_with_path();
+	ret = (int) pret;
+
 	return ret;
 }
 
@@ -1433,13 +1508,6 @@ int rm(int argc, char **argv)
 		}
 	}
 
-	const char *home = getenv("HOME");
-	if (home == NULL) {
-		fprintf(stderr, "$HOME environment variable is not set !\n"
-				"can not remove data\n");
-		return -1;
-	}
-
 	enable_flag(argv);
 
 	int ret = 0;
@@ -1450,6 +1518,13 @@ int rm(int argc, char **argv)
 	struct bucket *buk_w = NULL;
 
 	struct pfile *file = NULL;
+
+	enum plank_status pret = PLANK_OK;
+	pret = get_blob_path(&file_path);
+	if (pret != PLANK_OK) {
+		ret = (int) pret;
+		goto out;
+	}
 
 	buk_1 = bring_bucket();
 	if (buk_1 == NULL) {
@@ -1463,10 +1538,6 @@ int rm(int argc, char **argv)
 		ret = -1;
 		goto out;
 	}
-
-	ret = asprintf(&file_path, "%s/pblob", home);
-	if (ret == -1)
-		goto out;
 
 	file = op_pfile(file_path, FILE_WRITE);
 	if (file == NULL) {
@@ -1485,6 +1556,9 @@ int rm(int argc, char **argv)
 out:
 	if (ret == -1)
 		fprintf(stderr, "failed to remove data from binary blob\n");
+
+	pret = done_with_path();
+	ret = (int) pret;
 
 	empty_bucket(buk_1);
 	empty_bucket(buk_w);
@@ -1511,20 +1585,18 @@ extern int merge_buk(
 
 extern int get_blob_data(struct bucket **buk_ret)
 {
-	const char *home = getenv("HOME");
-	if (home == NULL) {
-		fprintf(stderr, "$HOME environment variable is not set !\n"
-				"can not show data\n");
-		return -1;
-	}
-
 	char *path_to_file = NULL;
 	struct pfile *file = NULL;
 	struct bucket *buk = NULL;
 
-	int ret = asprintf(&path_to_file, "%s/pblob", home);
-	if (ret == -1)
+	int ret;
+	enum plank_status pret;
+
+	pret = get_blob_path(&path_to_file);
+	if (pret != PLANK_OK) {
+		ret = (int) pret;
 		goto out;
+	}
 
 	ret = 0;
 	file = op_pfile(path_to_file, FILE_READ);
@@ -1542,6 +1614,9 @@ out:
 		empty_bucket(buk);
 		buk = NULL;
 	}
+
+	pret = done_with_path();
+	ret = (int) pret;
 
 	cls_pfile(file);
 	free(path_to_file);
