@@ -31,10 +31,10 @@ struct system_info *get_system_info(int flags)
 	struct loader_entries *entries = NULL;
 
 	struct mount_info mount_info;
-	mount_info.type = 0;
-	memset(mount_info.sur_uuid, 0, 37);
+	memset(&mount_info, 0, sizeof(mount_info));
 
-	struct system_info *ret_info = malloc(sizeof(struct system_info));
+	struct system_info *ret_info = NULL;
+	ret_info = malloc(sizeof(struct system_info));
 	if (ret_info == NULL) {
 		ret = PLANK_MEM_ERR;
 		goto out;
