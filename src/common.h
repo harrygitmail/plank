@@ -46,3 +46,4 @@ char **list_files(const char *path, int dirfd, size_t  *const count);
 void free_file_list(char **const p, size_t counts);
 
 void printf_uuid(uint8_t uuid[16]);
+void printf_uuid2(FILE *f, char uuid[16]);
