@@ -278,25 +278,60 @@ enum plank_status _umount(
 	struct libmnt_context *mount_context = NULL;
 	int tmp_ret;
 	enum plank_status ret = PLANK_OK;
-	mount_context = mnt_new_context();
 
+	char buf[1024];
+	mount_context = mnt_new_context();
 	if (mount_context == NULL)
-		return PLANK_ERR;
+		goto new_context_fail;
 
 	tmp_ret = mnt_context_set_target(mount_context, target);
-
-	if (tmp_ret < 0) {
-		ret = PLANK_LIBMOUNT_ERR;
-		goto out;
-	}
+	if (tmp_ret < 0)
+		goto set_target_fail;
 
 	tmp_ret = mnt_context_umount(mount_context);
+	if (tmp_ret > 0)
+		goto context_umount_fail;
 
-	if (tmp_ret > 0) {
-		ret = PLANK_LIBMOUNT_ERR;
-		goto out;
-	}
+	goto out;
 
+new_context_fail:
+	fprintf(stderr,
+		"_umount: "
+		"mnt_new_context() failed\n");
+
+	goto fail;
+
+set_target_fail:
+	fprintf(stderr,
+		"_umount: "
+		"mnt_set_target() failed\n");
+
+	goto fail;
+
+context_umount_fail:
+	int tmp = mnt_context_get_excode(
+		mount_context,
+		ret,
+		buf,
+		1024);
+
+	fprintf(stderr,
+		"_umount(libmount): "
+		"%s\n",
+		buf);
+
+	fprintf(stderr,
+		"_umount: "
+		"mnt_context_umount() failed\n");
+
+	goto fail;
+
+fail:
+	fprintf(stderr,
+		"_umount: "
+		"failed to umount given path: %s\n",
+		target);
+	ret = PLANK_LIBMOUNT_ERR;
 out:
 	mnt_free_context(mount_context);
 	return ret;
