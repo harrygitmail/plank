@@ -1557,12 +1557,12 @@ out:
 	if (ret == -1)
 		fprintf(stderr, "failed to remove data from binary blob\n");
 
+	cls_pfile(file);
 	pret = done_with_path();
 	ret = (int) pret;
 
 	empty_bucket(buk_1);
 	empty_bucket(buk_w);
-	cls_pfile(file);
 	return ret;
 }
 
