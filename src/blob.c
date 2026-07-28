@@ -1615,10 +1615,11 @@ out:
 		buk = NULL;
 	}
 
+	cls_pfile(file);
+
 	pret = done_with_path();
 	ret = (int) pret;
 
-	cls_pfile(file);
 	free(path_to_file);
 	*buk_ret = buk;
 
