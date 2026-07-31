@@ -1295,11 +1295,13 @@ out:
 	 * specific action require to take
 	 * just report it back to caller
 	 */
-	if (cls_pfile(file))
-		ret = -1;
+	int cls = cls_pfile(file);
+	if (cls != 0)
+		ret = cls;
 
 	pret = done_with_path();
-	ret = (int) pret;
+	if (pret != PLANK_OK)
+		ret = (int) pret;
 
 	empty_bucket(buk);
 	free(path_to_file);
@@ -1452,9 +1454,12 @@ write_data:
 	if (ret == -1)
 		goto out;
 out:
-	ret = cls_pfile(file);
 	if (ret == -1)
 		fprintf(stderr, "failed to write proper binary blob\n");
+
+	int cls = cls_pfile(file);
+	if (cls != 0)
+		ret = cls;
 
 	free(path_to_file);
 
@@ -1466,7 +1471,8 @@ out:
 	}
 
 	pret = done_with_path();
-	ret = (int) pret;
+	if (pret != PLANK_OK)
+		ret = (int) pret;
 
 	return ret;
 }
@@ -1554,12 +1560,16 @@ int rm(int argc, char **argv)
 		goto out;
 
 out:
-	if (ret == -1)
+	if (ret != 0)
 		fprintf(stderr, "failed to remove data from binary blob\n");
 
-	cls_pfile(file);
+	int cls = cls_pfile(file);
+	if (cls != 0)
+		ret = cls;
+
 	pret = done_with_path();
-	ret = (int) pret;
+	if (pret != PLANK_OK)
+		ret = (int) pret;
 
 	empty_bucket(buk_1);
 	empty_bucket(buk_w);
