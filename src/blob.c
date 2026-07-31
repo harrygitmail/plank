@@ -354,9 +354,11 @@ static int write_data(struct bucket *buk, struct pfile *file)
 		if (ret == -1)
 			goto fail;
 
-		printf("write_data: zero size: %zu\n", zero_size);
-		printf("write_data: last data offset : %#lx\n", last_data_off);
-		printf("write_data: data size: %zu \n", data_size);
+		if (is_flag(FLG_VERBOSE)) {
+			printf("write_data: zero size: %zu\n", zero_size);
+			printf("write_data: last data offset : %#lx\n", last_data_off);
+			printf("write_data: data size: %zu \n", data_size);
+		}
 	}
 
 	file->index.total_data = buk->write;
