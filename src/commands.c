@@ -52,11 +52,6 @@ int show_host_info(int argc, char **argv)
 		status = info->status;
 		goto out;
 
-	case PLANK_BTRFS_NO_SNAPSHOT_FOUND:
-		fprintf(stderr, "NO snapshot found\n");
-		status = info->status;
-		goto show_kern;
-
 	case PLANK_BTRFS_ERR_NOT_BTRFS:
 		fprintf(stderr, "root filesystem is not btrfs\n");
 		status = info->status;
@@ -69,6 +64,11 @@ int show_host_info(int argc, char **argv)
 
 	case PLANK_OK:
 		break;
+	}
+
+	if (info->system.snap.counts == 0) {
+		printf("NO snapshot found!\n");
+		goto show_blob_data;
 	}
 
 	printf("following snapshot found\n");
@@ -84,6 +84,8 @@ int show_host_info(int argc, char **argv)
 	 * so it will good to let user know which
 	 * subvolume ids they have been tracking
 	 */
+
+show_blob_data:
 	status = get_blob_data(&snap_buk);
 	if (status == -1) {
 		fprintf(stderr, "failed to read data from binary blob\n");

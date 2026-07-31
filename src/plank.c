@@ -62,7 +62,7 @@ eb:
 		}
 
 		ret = get_snap_ls(tar_subvol_fd, &snap);
-		if (ret != PLANK_OK)
+		if (ret != PLANK_OK && ret != PLANK_BTRFS_NO_SNAPSHOT_FOUND)
 			goto out;
 
 		ret = get_root_mount_info(MNT_UUID, &mount_info);
