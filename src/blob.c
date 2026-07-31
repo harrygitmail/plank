@@ -16,6 +16,7 @@ static int set_at(struct pfile *file, enum file_pos pos);
 #define MAX_ZERO_WRITE 0x50
 
 static int write_zero(struct pfile *file, uint64_t offset, size_t size);
+static int write_all_zero(struct pfile *file);
 static int write_ix(struct pfile *file);
 static int read_ix(struct pfile *file);
 
@@ -87,6 +88,7 @@ static void break_table(struct look_up_table *tab);
 
 #define IG_HEADER	(1 << 0)	/* ignore unknown header and continue operation */
 #define FLG_VERBOSE	(1 << 1)	/* show more info when function fail */
+#define FLG_RM_ALL	(1 << 2)	/* remove all data */
 
 static int blob_cmd_flags = 0;
 
@@ -99,6 +101,7 @@ typedef struct {
 options option[] = {
 	{"-ih", "--ingore-header", IG_HEADER},
 	{"-v", "--verbose", FLG_VERBOSE},
+	{"-a", "--remove-all", FLG_RM_ALL},
 	{NULL, NULL, 0},
 };
 
@@ -1540,15 +1543,20 @@ int rm(int argc, char **argv)
 		goto out;
 	}
 
-	ssize_t values = parse_argv(argv + 1, 0, buk_1);
-	if (values == -1) {
-		fprintf(stderr, "please only pass digits\n");
+	file = op_pfile(file_path, FILE_WRITE);
+	if (file == NULL) {
 		ret = -1;
 		goto out;
 	}
 
-	file = op_pfile(file_path, FILE_WRITE);
-	if (file == NULL) {
+	if (is_flag(FLG_RM_ALL)) {
+		ret = write_all_zero(file);
+		goto out;
+	}
+
+	ssize_t values = parse_argv(argv + 1, 0, buk_1);
+	if (values == -1) {
+		fprintf(stderr, "please only pass digits\n");
 		ret = -1;
 		goto out;
 	}
@@ -1637,6 +1645,47 @@ out:
 
 	return ret;
 
+}
+static int write_all_zero(struct pfile *file)
+{
+	if (file == NULL)
+		return -1;
+
+	if (is_flag(FLG_VERBOSE)) {
+		printf("write_all_zero: following file passed\n");
+		show_pfile(file);
+	}
+
+
+	int ret = 0;
+	uint64_t offset = 0;
+	size_t zero_count = 0;
+
+	zero_count = file->index.total_data * sizeof(struct data);
+	offset = START_OFFSET;
+	ret = write_zero(file, offset, zero_count);
+	if (ret != 0)
+		goto fail;
+
+	file->index.total_data = 0;
+	file->index.start_off = START_OFFSET;
+	file->index.last_off = file->index.start_off;
+
+	return 0;
+
+fail:
+	fprintf(stderr,
+		"write_all_zero: "
+		"failed to write all zero to file\n");
+	if (is_flag(FLG_VERBOSE)) {
+		fprintf(stderr,
+		"write_all_zero: "
+		"following file passed for writing\n");
+
+		show_pfile(file);
+	}
+
+	return -1;
 }
 
 void blob_usage()
