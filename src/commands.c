@@ -189,16 +189,21 @@ int make_entrie(int argc, char **argv)
 		break;
 	}
 
-	int p;
+	int p = 0;
 	enum plank_status p_status;
 
 	p_status = pre_entrie(info, &host_loader);
-
 	if (p_status != PLANK_OK) {
 		status = p_status;
 		goto out;
 	}
-	
+
+	if (host_loader[p].filename == NULL) {
+		printf("No entrie to make\n");
+		goto out;
+	}
+
+	printf("creating systemd-boot entrie with following info\n");
 	for(p = 0; ; p++) {
 		if(host_loader[p].filename == NULL) break;
 
@@ -207,13 +212,23 @@ int make_entrie(int argc, char **argv)
 		len = asprintf(&path_to_file, "%s/loader/entries/%s",
 				info->system.eb.boot_path,
 				host_loader[p].filename);
-
 		if (len == -1) goto out;
+
+		printf("path to file: %s\n", path_to_file);
+		printf("file name: %s\n", host_loader[p].filename);
+		printf("\n");
+		printf("	title: %s\n", host_loader[p].title);
+		printf("      version: %s\n", host_loader[p].version);
+		printf("     sort-key: %s\n", host_loader[p].sort_key);
+		printf("   machine-id: %s\n", host_loader[p].machine_id);
+		printf("      options: %s\n", host_loader[p].options);
+		printf("	linux: %s\n", host_loader[p].kernel);
+		printf("       initrd: %s\n", host_loader[p].initrd);
+		printf("\n");
 
 		FILE *file = fopen(path_to_file, "w");
 
 		p_status = write_entrie(&host_loader[p], file);
-
 		if (p_status != PLANK_OK)
 			goto out;
 
