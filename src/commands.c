@@ -86,7 +86,6 @@ int show_host_info(int argc, char **argv)
 	}
 
 	printf("following snapshot found\n");
-
 	for (size_t i = 0; i < info->system.snap.counts; i++) {
 		printf("\t%" PRIu64 "\n", info->system.snap.list[i].snapshot_id);
 	}
@@ -162,7 +161,6 @@ int make_entrie(int argc, char **argv)
 	struct loader_entrie_w *host_loader = NULL;
 
 	int flags = (SYSINFO_EB | SYSINFO_SYS | SYSINFO_OS_REL | SYSINFO_LDER);
-
 	info = get_system_info(flags);
 	switch (info->status) {
 	case PLANK_ERR:
@@ -229,7 +227,7 @@ int make_entrie(int argc, char **argv)
 	}
 
 	printf("creating systemd-boot entrie with following info\n");
-	for(p = 0; ; p++) {
+	for (p = 0; ; p++) {
 		if(host_loader[p].filename == NULL) break;
 
 		char *path_to_file = NULL;
@@ -237,7 +235,8 @@ int make_entrie(int argc, char **argv)
 		len = asprintf(&path_to_file, "%s/loader/entries/%s",
 				info->system.eb.boot_path,
 				host_loader[p].filename);
-		if (len == -1) goto out;
+		if (len == -1)
+			goto out;
 
 		printf("path to file: %s\n", path_to_file);
 		printf("file name: %s\n", host_loader[p].filename);
@@ -293,14 +292,12 @@ int clean(int argc , char **argv) {
 	size_t entry_del_count = 0;
 
 	tar_subvol_fd = open("/", O_RDONLY);
-
-	if(tar_subvol_fd == -1) {
+	if (tar_subvol_fd == -1) {
 		ret = -1;
 		goto out;
 	}
 
 	ret = get_snap_ls(tar_subvol_fd, &tar_subvol_snap_info);
-
 	switch (ret) {
 	case PLANK_BTRFS_ERR_NOT_BTRFS:
 		fprintf(stderr, "root filesystem is not btrfs filesystem\n");
@@ -333,28 +330,31 @@ int clean(int argc , char **argv) {
 get_kern_list:
 
 	ret = get_kernel_list(&host, "/");
-	if(ret == PLANK_ERR) goto out;
+	if (ret == PLANK_ERR)
+		goto out;
 
 	ret = get_entry_token(&entry_token);
-	if(ret == PLANK_ERR) goto out;
+	if (ret == PLANK_ERR)
+		goto out;
 
 	ret = get_boot_path(&boot_path);
-	if(ret == PLANK_BOOT_NOT_FOUND) {
+	if (ret == PLANK_BOOT_NOT_FOUND) {
 		printf("unable to find $BOOT. is it mounted correctly ?\n");
 		ret = 2;
 		goto out;
 	}
 
-	if(ret == PLANK_ERR) goto out;
-	entries = list_loader_entries(boot_path, entry_token);
+	if (ret == PLANK_ERR)
+		goto out;
 
-	if(entries->counts == 0) {
+	entries = list_loader_entries(boot_path, entry_token);
+	if (entries->counts == 0) {
 		printf("No loader entrie to remove\n");
 		ret = 0;
 		goto out;
 	}
 
-	if(entries->status != 0) {
+	if (entries->status != 0) {
 		printf("failed to get loader entrie list\n");
 		ret = entries->status;
 		goto out;
@@ -364,8 +364,8 @@ get_kern_list:
 
 	list_to_delete = malloc(sizeof(char *) * entries->counts);
 
-	for(size_t p = 0; p < entries->counts; p++) {
-		if(entries->entrie[p].status == ENTRY_DELETE_PENDING) {
+	for (size_t p = 0; p < entries->counts; p++) {
+		if (entries->entrie[p].status == ENTRY_DELETE_PENDING) {
 			asprintf(&list_to_delete[entry_del_count++],
 				"%s/loader/entries/%s",
 				boot_path,
@@ -373,15 +373,14 @@ get_kern_list:
 		}
 	}
 
-	if(entry_del_count == 0) {
+	if (entry_del_count == 0) {
 		printf("no loader entrie to remove\n");
 		ret = 0;
 		goto out;
 	}
 
 	printf("about ot delete following entries\n");
-
-	for(size_t i = 0; i < entry_del_count; i++) {
+	for (size_t i = 0; i < entry_del_count; i++) {
 		printf("%s\n", list_to_delete[i]);
 	}
 
@@ -390,7 +389,7 @@ get_kern_list:
 	scanf("%s", input);
 
 	int c = strncmp(input, "y", 1);
-	if(c != 0) {
+	if (c != 0) {
 		printf("Abort!!\n");
 		ret = 0;
 		goto out;
@@ -398,34 +397,35 @@ get_kern_list:
 
 	printf("deleting entries\n");
 
-	for(size_t i = 0; i < entry_del_count; i++)
+	for (size_t i = 0; i < entry_del_count; i++)
 		unlink(list_to_delete[i]);
 
-	goto out;
 
+	goto out;
 
 clean_all:
 
 	ret = get_entry_token(&entry_token);
-	if(ret == PLANK_ERR) goto out;
+	if (ret == PLANK_ERR)
+		goto out;
 
 	ret = get_boot_path(&boot_path);
-	if(ret == PLANK_BOOT_NOT_FOUND) {
+	if (ret == PLANK_BOOT_NOT_FOUND) {
 		printf("unable to find $BOOT. is it mounted correctly ?\n");
 		goto out;
 	}
 
-	if(ret == PLANK_ERR) goto out;
+	if (ret == PLANK_ERR)
+		goto out;
 
 	entries = list_loader_entries(boot_path, entry_token);
-
-	if(entries == NULL && entries->status != 0) {
+	if (entries == NULL && entries->status != 0) {
 		ret = entries->status;
 		printf("failed to delete entries\n");
 		goto out;
 	}
 
-	if(entries->counts == 0) {
+	if (entries->counts == 0) {
 		printf("No entrie to delete\n");
 		ret = 0;
 		goto out;
@@ -438,14 +438,13 @@ clean_all:
 	}
 
 	printf("about to delete following files:\n");
-
 	for(size_t i = 0; i < entries->counts; i++) {
 
-	asprintf(&list_to_delete[entry_del_count], "%s/loader/entries/%s",
+		asprintf(&list_to_delete[entry_del_count], "%s/loader/entries/%s",
 			boot_path,
 			entries->entrie[i].file_name);
 
-	printf("%s\n", list_to_delete[entry_del_count++]);
+		printf("%s\n", list_to_delete[entry_del_count++]);
 
 	}
 
@@ -454,7 +453,6 @@ clean_all:
 	scanf("%s", input2);
 
 	int c2 = strncmp(input2, "y", 1);
-
 	if (c2 != 0) {
 		printf("abort!\n");
 		goto out;
@@ -464,24 +462,23 @@ clean_all:
 		unlink(list_to_delete[i]);
 
 out:
-	if(tar_subvol_fd != -1) close(tar_subvol_fd);
+	if (tar_subvol_fd != -1) close(tar_subvol_fd);
 	free(host.list);
 	free(tar_subvol_snap_info.list);
 	free(entry_token);
 	free(boot_path);
 
-	if(entries != NULL) {
-		for(size_t i = 0; i < entries->counts; i++)
+	if (entries != NULL) {
+		for (size_t i = 0; i < entries->counts; i++)
 			free(entries->entrie[i].file_name);
 		free(entries->entrie);
 	}
 	free(entries);
-	if(list_to_delete != NULL)
-		for(size_t i = 0; i < entry_del_count; i++)
+	if (list_to_delete != NULL)
+		for (size_t i = 0; i < entry_del_count; i++)
 			free(list_to_delete[i]);
 
 	free(list_to_delete);
-
 	return ret;
 }
 
@@ -493,23 +490,21 @@ int show_entrie(int argc, char **argv)
 	char *entry_token = NULL;
 
 	enum plank_status ret;
-	ret = get_entry_token(&entry_token);
 
-	if(ret != PLANK_OK) {
+	ret = get_entry_token(&entry_token);
+	if (ret != PLANK_OK) {
 		status = 2;
 		goto exit;
 	}
 
 	ret = get_boot_path(&path_to_boot);
-	
-	if(ret != PLANK_OK) {
+	if (ret != PLANK_OK) {
 		status = 2;
 		goto exit;
 	}
 
 	entries = list_loader_entries(path_to_boot, entry_token);
-
-	if(entries->counts == 0) {
+	if (entries->counts == 0) {
 		printf("no loader entries found\n");
 		status = entries->status;
 		goto exit;
@@ -522,14 +517,15 @@ int show_entrie(int argc, char **argv)
 		fprintf(stderr, "use '-l' option to just list entries\n");
 		goto exit;
 	}
+
 	for (size_t i = 0; i < entries->counts; i++) {
 
 		char *path_to_file = NULL;
+
 		int len = asprintf(&path_to_file,
 			"%s/loader/entries/%s",
 			path_to_boot,
 			entries->entrie[i].file_name);
-
 		if (len == -1) {
 			ret = PLANK_MEM_ERR;
 			goto exit;
@@ -542,7 +538,6 @@ int show_entrie(int argc, char **argv)
 		}
 
 		struct loader_entrie_w *entrie = NULL;
-
 		entrie = parse_entrie(file);
 		if (entrie == NULL) {
 			ret = PLANK_ERR;
@@ -589,8 +584,8 @@ exit:
 	free(path_to_boot);
 	free(entry_token);
 
-	if(entries != NULL) {
-		for(size_t i = 0; i < entries->counts; i++)
+	if (entries != NULL) {
+		for (size_t i = 0; i < entries->counts; i++)
 			free(entries->entrie[i].file_name);
 	}
 
@@ -682,7 +677,8 @@ int check(int argc, char **argv)
 	snap_relative_path = malloc(sizeof(char *) * capacity);
 
 	int fd = open(mnt_p, O_RDONLY);
-	if (fd < 0) goto out;
+	if (fd < 0)
+		goto out;
 
 	for (size_t i = 0; i < info->system.snap.counts; i++) {
 		kern_list_array[i] = malloc(sizeof(struct kernel_list));
@@ -792,7 +788,9 @@ int ls_subvol(int argc, char **argv)
 
 	uint64_t root_id = 0;
 	int root_fd = -1;
-	enum plank_status ret = get_subvol_list(&subvol_ls, btrfs);
+	enum plank_status ret = PLANK_OK;
+
+	ret = get_subvol_list(&subvol_ls, btrfs);
 	switch (ret) {
 
 	case PLANK_BTRFS_ERR_NOT_BTRFS:
@@ -832,26 +830,23 @@ int ls_subvol(int argc, char **argv)
 	}
 
 	for (size_t i = 0; i < subvol_ls.total; i++) {
-		printf("subvol id: 		%" PRIu64 "\n",
-			subvol_ls.subvols[i].id);
-
-		printf("subvol parent id:	%" PRIu64 "\n",
-			subvol_ls.subvols[i].par_id);
-
-		printf("subvol uuid:		");
-		printf_uuid(subvol_ls.subvols[i].uuid);
-		printf("\n");
-
-		printf("subvol parent uuid:	");
-		printf_uuid(subvol_ls.subvols[i].par_uuid);
-		printf("\n");
 
 		char *path = get_subvol_path(subvol_ls.subvols[i].id, btrfs);
 
+		printf("subvol id: 		%" PRIu64 "\n",
+			subvol_ls.subvols[i].id);
+		printf("subvol parent id:	%" PRIu64 "\n",
+			subvol_ls.subvols[i].par_id);
+		printf("subvol uuid:		");
+		printf_uuid(subvol_ls.subvols[i].uuid);
+		printf("\n");
+		printf("subvol parent uuid:	");
+		printf_uuid(subvol_ls.subvols[i].par_uuid);
+		printf("\n");
 		printf("subvol path:		%s\n", path);
+		printf("\n");
 
 		free(path);
-		printf("\n");
 
 	}
 
@@ -895,14 +890,14 @@ show_root:
 	printf("root subvolume id : %" PRIu64 "\n", root_id);
 
 out:
-	free(subvol_ls.subvols);
 	if (btrfs <! 0)
 		close(btrfs);
+
 	if (root_fd <! 0)
 		close(root_fd);
 
+	free(subvol_ls.subvols);
 	free(ref);
-
 	free_tree(head);
 
 	return ret;
