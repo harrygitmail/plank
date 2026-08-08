@@ -17,6 +17,15 @@
 #include <string.h>
 #include <unistd.h>
 
+#define DASHLINE_L		54
+void pdashline(int characters)
+{
+	for (int i = 0; i < characters; i++)
+		printf("-");
+
+	printf("\n");
+}
+
 int show_host_info(int argc, char **argv)
 {
 	struct system_info *info = NULL;
@@ -64,6 +73,11 @@ int show_host_info(int argc, char **argv)
 
 	case PLANK_OK:
 		break;
+
+	default:
+		fprintf(stderr, "unknown status code : %d\n", info->status);
+		status = info->status;
+		goto out;
 	}
 
 	if (info->system.snap.counts == 0) {
@@ -93,6 +107,13 @@ show_blob_data:
 		goto show_kern;
 	}
 
+	pdashline(DASHLINE_L);
+	if (snap_buk->write == 0) {
+		printf("no subvolume are being tracked\n");
+		printf("\n");
+		goto show_kern;
+	}
+
 	status = 0;
 
 	printf("following are subvolume been tracked\n");
@@ -102,14 +123,13 @@ show_blob_data:
 	printf("\n");
 
 show_kern:
+	pdashline(DASHLINE_L);
 	if (info->system.kern.counts == 0) {
-		fprintf(stdout, "NO kernel found\n\n");
+		fprintf(stdout, "NO kernel found on root filesystem\n\n");
 		goto show_next;
 	}
 
-	printf("-----------------------------------------------\n");
-	printf("following kernel found\n");
-
+	printf("following kernel found on root filesystem\n");
 	for (size_t i = 0; i < info->system.kern.counts; i++) {
 		printf("\t%s\n", info->system.kern.list[i].kernel_ver);
 	}
@@ -117,7 +137,7 @@ show_kern:
 	printf("\n");
 
 show_next:
-	printf("----------------------------------------------\n");
+	pdashline(DASHLINE_L);
 	printf("system info:\n\n");
 
 	printf("entry-token	: %s\n", info->system.eb.entry_token);
@@ -187,6 +207,11 @@ int make_entrie(int argc, char **argv)
 
 	case PLANK_OK:
 		break;
+
+	default:
+		fprintf(stderr, "unknown status code : %d\n", info->status);
+		status = info->status;
+		goto out;
 	}
 
 	int p = 0;
@@ -286,7 +311,7 @@ int clean(int argc , char **argv) {
 		goto out;
 
 	case PLANK_PARM_ERR:
-		fprintf(stderr, "permission defined !\n");
+		fprintf(stderr, "permission denied!\n");
 		goto out;
 
 	case PLANK_BTRFS_NO_SNAPSHOT_FOUND:
@@ -630,6 +655,11 @@ int check(int argc, char **argv)
 
 	case PLANK_OK:
 		break;
+
+	default:
+		fprintf(stderr, "unknown status code %d\n", info->status);
+		status = info->status;
+		goto out;
 	}
 	enum plank_status ret ;
 
@@ -640,9 +670,8 @@ int check(int argc, char **argv)
 	}
 
 	ret = mount_top_subvol(&info->system.mount_info, mnt_p);
-
 	if (ret != PLANK_OK) {
-		fprintf(stderr, "something went wrong");
+		fprintf(stderr, "something went wrong\n");
 		goto out;
 	}
 
@@ -697,7 +726,11 @@ int check(int argc, char **argv)
 			printf("\t%s\n", k->list[j].kernel_ver);
 
 		printf("\n");
-		printf("kernel present on snapshot:\n");
+
+		if (kern_list_array[i]->counts == 0)
+			printf("no kernel present on this snapshot\n");
+		else
+			printf("kernel present on this snapshot:\n");
 
 		for (size_t x = 0; x < kern_list_array[i]->counts; x++)
 			printf("\t%s\n", kern_list_array[i]->list[x].kernel_ver);
@@ -714,7 +747,7 @@ int check(int argc, char **argv)
 
 	ret = mnt_no_need_now(&info->system.mount_info);
 	if (ret == PLANK_LIBMOUNT_ERR) {
-		fprintf(stderr, "libmount operation failed");
+		fprintf(stderr, "libmount operation failed\n");
 		goto out;
 	}
 out:
@@ -768,6 +801,8 @@ int ls_subvol(int argc, char **argv)
 
 	case PLANK_PARM_ERR:
 		fprintf(stderr, "permission denied!\n");
+		fprintf(stderr, "program do not have enough privilege\n");
+		fprintf(stderr, "try running it with sudo\n");
 		goto out;
 
 	case PLANK_BTRFS_ERR:
@@ -776,6 +811,10 @@ int ls_subvol(int argc, char **argv)
 
 	case PLANK_OK:
 		break;
+
+	default:
+		fprintf(stderr, "unknown return status %d\n", ret);
+		goto out;
 	}
 
 	if (argc > 2 ) {
