@@ -13,9 +13,7 @@
 #include "write.h"
 #include "blob.h"
 #include "buk.h"
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+#include "copy.h"
 
 #define DASHLINE_L		54
 void pdashline(int characters)
@@ -928,4 +926,24 @@ int blob(int argc, char **argv)
 	fprintf(stderr, "'%s' unknown command\n", cmd);
 	blob_usage();
 	return 1;
+}
+
+int copy(int argc, char **argv)
+{
+	if (argc < 3) {
+		fprintf(stderr, "few argument\n");
+		return -1;
+	}
+
+	char *src = argv[1];
+	char *dest = argv[2];
+
+	int ret = 0;
+	ret = copy_file(src, dest);
+	if (ret < 0) {
+		fprintf(stderr, "failed to copy file\n");
+		return ret;
+	}
+
+	return 0;
 }

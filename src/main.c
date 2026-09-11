@@ -17,6 +17,7 @@ command commands[] = {
 	{"check", check},
 	{"list-subvol", ls_subvol},
 	{"blob", blob},
+	{"copy", copy},
 	{NULL,NULL}
 };
 
@@ -31,7 +32,8 @@ void usage()
 		"show-entrie:    info of entrie\n"
 		"check:          check kernel mismatch for snapshot\n"
 		"list-subvol:    list subvol info\n"
-		"blob:		 store subvol data(id) to keep thier track\n");
+		"blob:		 store subvol data(id) to keep thier track\n"
+		"copy:		 copy file (its for internal testing)");
 }
 
 int main(int argc, char **argv)
