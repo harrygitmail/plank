@@ -8,6 +8,106 @@
 #include <time.h>
 #include "types.h"
 #include "common.h"
+#include "parse.h"
+#include "entr.h"
+
+static char **get_files_path(
+	const char *BOOT,
+	const char *entry_token,
+	size_t *count)
+{
+	char *path_to_files = NULL;
+	char *prefix = NULL;
+	char **files = NULL;
+	char **files_path = NULL;
+
+	int nread;
+	size_t c_line = 0;
+	size_t prefix_lenght = 0;
+	size_t counts = 0;
+
+	nread = asprintf(&path_to_files, "%s/loader/entries", BOOT);
+	if (nread == -1)
+		goto fail;
+
+	nread = asprintf(&prefix, "snapshot-%s", entry_token);
+	if (nread == -1)
+		goto fail;
+
+	prefix_lenght = strlen(prefix);
+	files = list_files(path_to_files, 0,  &counts);
+	if (!files)
+		goto fail;
+
+	files_path = malloc(sizeof(char *) * counts);
+	if (!files_path)
+		goto fail;
+
+	for (size_t i = 0; i < counts; i++) {
+		int cmp = strncmp(files[i], prefix, prefix_lenght);
+		if (cmp != 0)
+			continue;
+
+		nread = asprintf(
+			&files_path[c_line],
+			"%s/%s", path_to_files,
+			files[i]);
+		if (nread == -1)
+			goto fail;
+
+		c_line++;
+	}
+
+	free_file_list(files, counts);
+	free(prefix);
+	free(path_to_files);
+	*count = c_line;
+	return files_path;
+fail:
+	free(path_to_files);
+	free_file_list(files, counts);
+	free_file_list(files_path, c_line);
+	free(files_path);
+	return NULL;
+}
+
+static struct loader_entries_w *loader_entries_read(
+	char **file_paths,
+	size_t count)
+{
+	struct loader_entries_w *entries = NULL;
+	FILE *file = NULL;
+
+	entries = bring_ld_entrs_w(count);
+	if (!entries)
+		return NULL;
+
+	for (size_t i = 0; i < count; i++) {
+		struct loader_entry_w *entrie = NULL;
+		file = fopen(file_paths[i], "r");
+		if (!file)
+			goto fail;
+
+		entrie = parse_entry(file, file_paths[i]);
+		if (!entrie)
+			goto fail;
+
+		memcpy(
+			&entries->entrie[i],
+			entrie,
+			sizeof(struct loader_entry_w));
+
+		entries->curr++;
+
+		fclose(file);
+		free(entrie);
+	}
+
+	return entries;
+fail:
+	free_ld_entrs_w(entries);
+	return NULL;
+}
 
 struct loader_entries *list_loader_entries(const char *BOOT,
 	const char *entry_token)
@@ -18,66 +118,45 @@ struct loader_entries *list_loader_entries(const char *BOOT,
 	if (entry_token == NULL)
 		return NULL;
 
-	char *path_to_files = NULL;
-	struct loader_entrie *entries = NULL;
-	char *prefix = NULL;
-	char **files = NULL;
+	char **file_paths = NULL;
+	size_t total_files = 0;
 
-	int nread;
-	int status;
-	size_t c_line = 0;
-	size_t prefix_lenght;
-	size_t counts = 0;
+	struct loader_entries_w *entries_w = NULL;
+	struct loader_entries *entries = NULL;
 
-	nread = asprintf(&path_to_files, "%s/loader/entries", BOOT);
-	if(nread == -1) {
-		entries = NULL;
-		status = -1;
-		goto out;
+	file_paths = get_files_path(BOOT, entry_token, &total_files);
+	if (!file_paths)
+		goto fail;
+
+	entries_w = loader_entries_read(file_paths, total_files);
+	if (!entries_w)
+		goto fail;
+
+	entries = bring_ld_entrs(total_files);
+	if (!entries)
+		goto fail;
+
+	for (size_t i = 0; i < total_files; i++) {
+		int ret = entr_w_to_entr(
+			&entries_w->entrie[i],
+			&entries->entrie[i]);
+		if (ret)
+			goto fail;
+
+		entries->counts++;
 	}
 
-	nread = asprintf(&prefix, "snapshot-%s", entry_token);
+	free_ld_entrs_w(entries_w);
+	free_file_list(file_paths, total_files);
+	return entries;
+fail:
+	free_file_list(file_paths, total_files);
+	free_ld_entrs_w(entries_w);
+	free_ld_entrs(entries);
+	fprintf(stderr,
+		"list_loader_entries: failed to list loader entries\n");
+	return NULL;
 
-	if(nread == -1) {
-		entries = NULL;
-		status = -1;
-		goto out;
-	}
-
-	prefix_lenght = strlen(prefix);
-
-	files = list_files(path_to_files, 0,  &counts);
-
-	entries = malloc(sizeof(struct loader_entrie) * counts);
-
-	for (size_t i = 0; i < counts; i++) {
-		int c = strncmp(files[i], prefix, prefix_lenght);
-		if (c != 0) continue;
-
-		entries[c_line++].file_name = strdup(files[i]);
-
-	}
-
-	if(c_line == 0) {
-		free(entries);
-		entries = NULL;
-		status = 0;
-		goto out;
-	}
-
-	status = 0;
-out:
-	free(path_to_files);
-	free(prefix);
-	free_file_list(files, counts);
-
-	struct loader_entries *entrie_list;
-	entrie_list = malloc(sizeof(struct loader_entries));
-	entrie_list->entrie = entries;
-	entrie_list->counts = c_line;
-	entrie_list->status = status;
-
-	return entrie_list;
 }
 static inline void update_entrie_status(int found_kern,
 	int found_snap, entry_status *status) {
