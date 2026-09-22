@@ -21,16 +21,6 @@ enum plank_status {
 	PLANK_PARM_ERR,
 };
 
-struct snapshot_info{
-	uint64_t snapshot_id;
-	struct timespec snapshot_time;
-};
-
-struct snapshot_list {
-	struct snapshot_info *list;
-	size_t counts;
-};
-
 struct kernel_ver {
 	char kernel_ver[65];
 };
@@ -41,7 +31,19 @@ struct kernel_list{
 
 };
 
-struct loader_entrie_w{
+
+struct snapshot_info {
+	uint64_t snapshot_id;
+	struct timespec snapshot_time;
+	struct kernel_list klist;
+};
+
+struct snapshot_list {
+	struct snapshot_info *list;
+	size_t counts;
+};
+
+struct loader_entry_w {
 
 	char *filename;
 	char *title;
@@ -54,13 +56,18 @@ struct loader_entrie_w{
 
 };
 
+struct loader_entries_w {
+	struct loader_entry_w *entrie;
+	size_t cap;
+	size_t curr;
+};
 
 typedef enum {
 	ENTRY_OK,
 	ENTRY_DELETE_PENDING,
 } entry_status;
 
-struct loader_entrie {
+struct loader_entry {
 
 	char *file_name;
 	struct kernel_ver *kern;
@@ -70,8 +77,9 @@ struct loader_entrie {
 };
 
 struct loader_entries {
-	struct loader_entrie *entrie;
+	struct loader_entry *entrie;
 	size_t counts;
+	size_t cap;
 	int status;
 };
 
