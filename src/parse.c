@@ -165,14 +165,39 @@ static int cmp_key(const char *key)
 	return -1;
 }
 
-struct loader_entry_w *parse_entry(FILE *file)
+struct loader_entry_w *parse_entry(FILE *fl, const char *path)
 {
+	FILE *file = NULL;
 	char **lines = NULL;
+	char *file_name = NULL;
 	struct loader_entry_w *ret = NULL;
 	struct key_val_t *tab = NULL;
+	int should_close = 0;
 
+	if (fl == NULL && path == NULL)
+		return NULL;
+
+	if (fl == NULL) {
+		file = fopen(path, "r");
+		if (file == NULL) {
+			perror("parse_entry");
+			goto out;
+		}
+		should_close = 1;
+	} else {
+		file = fl;
+	}
+
+	if (path == NULL)
+		goto read_file;
+
+	file_name = (char *) bsname(path);
+	file_name = strdup(file_name);
+	if (file_name == NULL)
+		goto out;
+
+read_file:
 	lines = read_file(file);
-
 	if (lines == NULL) {
 		ret = NULL;
 		goto out;
@@ -183,6 +208,12 @@ struct loader_entry_w *parse_entry(FILE *file)
 		goto out;
 
 	tab = get_key_val_t(lines);
+	if (tab == NULL) {
+		free(ret);
+		ret = NULL;
+		goto out;
+	}
+
 	size_t tab_c = 0;
 
 	while (tab[tab_c].key != NULL) {
@@ -221,7 +252,11 @@ struct loader_entry_w *parse_entry(FILE *file)
 
 	}
 
+	ret->filename = file_name;
 out:
+	if (should_close)
+		fclose(fl);
+
 	free(tab);
 	for(int i = 0; lines[i] != NULL; i++)
 		free(lines[i]);
