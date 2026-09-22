@@ -165,11 +165,10 @@ static int cmp_key(const char *key)
 	return -1;
 }
 
-struct loader_entrie_w *parse_entrie(FILE *file)
+struct loader_entry_w *parse_entry(FILE *file)
 {
-	struct loader_entrie_w *ret = NULL;
 	char **lines = NULL;
-
+	struct loader_entry_w *ret = NULL;
 	struct key_val_t *tab = NULL;
 
 	lines = read_file(file);
@@ -179,7 +178,9 @@ struct loader_entrie_w *parse_entrie(FILE *file)
 		goto out;
 	}
 
-	ret = malloc(sizeof(struct loader_entrie_w));
+	ret = malloc(sizeof(struct loader_entry_w));
+	if (ret == NULL)
+		goto out;
 
 	tab = get_key_val_t(lines);
 	size_t tab_c = 0;

@@ -156,7 +156,7 @@ int make_entrie(int argc, char **argv)
 	int status = 0;
 
 	struct system_info *info = NULL;
-	struct loader_entrie_w *host_loader = NULL;
+	struct loader_entries_w *host_loader = NULL;
 
 	int flags = (SYSINFO_EB | SYSINFO_SYS | SYSINFO_OS_REL | SYSINFO_LDER);
 	info = get_system_info(flags);
@@ -219,56 +219,46 @@ int make_entrie(int argc, char **argv)
 		goto out;
 	}
 
-	if (host_loader[p].filename == NULL) {
+	if (host_loader->curr == 0) {
 		printf("No entrie to make\n");
 		goto out;
 	}
 
 	printf("creating systemd-boot entrie with following info\n");
-	for (p = 0; ; p++) {
-		if(host_loader[p].filename == NULL) break;
-
+	for (p = 0; p < host_loader->curr; p++) {
 		char *path_to_file = NULL;
 
 		len = asprintf(&path_to_file, "%s/loader/entries/%s",
 				info->system.eb.boot_path,
-				host_loader[p].filename);
+				host_loader->entrie[p].filename);
 		if (len == -1)
 			goto out;
 
 		printf("path to file: %s\n", path_to_file);
-		printf("file name: %s\n", host_loader[p].filename);
+		printf("file name: %s\n", host_loader->entrie[p].filename);
 		printf("\n");
-		printf("	title: %s\n", host_loader[p].title);
-		printf("      version: %s\n", host_loader[p].version);
-		printf("     sort-key: %s\n", host_loader[p].sort_key);
-		printf("   machine-id: %s\n", host_loader[p].machine_id);
-		printf("      options: %s\n", host_loader[p].options);
-		printf("	linux: %s\n", host_loader[p].kernel);
-		printf("       initrd: %s\n", host_loader[p].initrd);
+		printf("	title: %s\n", host_loader->entrie[p].title);
+		printf("      version: %s\n", host_loader->entrie[p].version);
+		printf("     sort-key: %s\n", host_loader->entrie[p].sort_key);
+		printf("   machine-id: %s\n", host_loader->entrie[p].machine_id);
+		printf("      options: %s\n", host_loader->entrie[p].options);
+		printf("	linux: %s\n", host_loader->entrie[p].kernel);
+		printf("       initrd: %s\n", host_loader->entrie[p].initrd);
 		printf("\n");
 
 		FILE *file = fopen(path_to_file, "w");
 
-		p_status = write_entrie(&host_loader[p], file);
+		p_status = write_entrie(&host_loader->entrie[p], file);
 		if (p_status != PLANK_OK)
 			goto out;
 
 		fclose(file);
 
-		free(host_loader[p].filename);
-		free(host_loader[p].title);
-		free(host_loader[p].version);
-		free(host_loader[p].sort_key);
-		free(host_loader[p].options);
-		free(host_loader[p].kernel);
-		free(host_loader[p].initrd);
-
 		free(path_to_file);
 	}
 out:
+	free_ld_entrs_w(host_loader);
 	free_system_info(info, flags);
-	free(host_loader);
 
 	return status;
 }
@@ -466,12 +456,8 @@ out:
 	free(entry_token);
 	free(boot_path);
 
-	if (entries != NULL) {
-		for (size_t i = 0; i < entries->counts; i++)
-			free(entries->entrie[i].file_name);
-		free(entries->entrie);
-	}
-	free(entries);
+	free_ld_entrs(entries);
+
 	if (list_to_delete != NULL)
 		for (size_t i = 0; i < entry_del_count; i++)
 			free(list_to_delete[i]);
@@ -535,8 +521,7 @@ int show_entrie(int argc, char **argv)
 			goto exit;
 		}
 
-		struct loader_entrie_w *entrie = NULL;
-		entrie = parse_entrie(file);
+		struct loader_entry_w *entrie = NULL;
 		if (entrie == NULL) {
 			ret = PLANK_ERR;
 			goto exit;
@@ -582,13 +567,7 @@ exit:
 	free(path_to_boot);
 	free(entry_token);
 
-	if (entries != NULL) {
-		for (size_t i = 0; i < entries->counts; i++)
-			free(entries->entrie[i].file_name);
-	}
-
-	free(entries->entrie);
-	free(entries);
+	free_ld_entrs(entries);
 
 	return status;
 }

@@ -172,7 +172,7 @@ void link_loader_entries(
 
 
 enum plank_status pre_entrie(struct system_info *s_info,
-	struct loader_entrie_w **entrie_out)
+	struct loader_entry_w **entrie_out)
 {
 	struct snapshot_list snap;
 	snap = s_info->system.snap;
@@ -186,7 +186,7 @@ enum plank_status pre_entrie(struct system_info *s_info,
 	size_t capacity = 5;
 	size_t n = 0;
 
-	*entrie_out = malloc(sizeof(struct loader_entrie_w) * capacity);
+	*entrie_out = malloc(sizeof(struct loader_entry_w) * capacity);
 
 	for (size_t i = 0; i < snap.counts; i++) {
 		struct tm t;
@@ -202,11 +202,11 @@ enum plank_status pre_entrie(struct system_info *s_info,
 		for (size_t j = 0; j < kern.counts; j++) {
 
 			if (n >= capacity + 1) {
-				struct loader_entrie_w *tmp;
+				struct loader_entry_w *tmp;
 				size_t new_capacity = capacity * 2;
 
 				size_t nsize;
-				nsize = sizeof(struct loader_entrie_w) * new_capacity;
+				nsize = sizeof(struct loader_entry_w) * new_capacity;
 
 				tmp = realloc(*entrie_out, nsize);
 
