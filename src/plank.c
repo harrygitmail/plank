@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include "btrfs.h"
 #include "common.h"
+#include "entr.h"
 #include "kernel.h"
 #include "types.h"
 #include "plank.h"
@@ -84,15 +85,17 @@ eb:
 
 	if (flags & SYSINFO_LDER) {
 
-		if (boot_path == NULL && entry_token == NULL) {
+		if (boot_path == NULL || entry_token == NULL) {
 			flags = 0;
 			flags |= SYSINFO_EB;
 			goto eb;
 		}
 
 		entries = list_loader_entries(boot_path, entry_token);
-		if (entries == NULL)
+		if (entries == NULL) {
+			ret = PLANK_ERR;
 			goto out;
+		}
 
 	}
 out:
@@ -137,16 +140,9 @@ void free_system_info(struct system_info *info, int flags)
 	}
 
 	if (flags & SYSINFO_LDER) {
-		if (info->loader.entries == NULL)
-			goto free_info;
-
-		for (size_t i = 0; i < info->loader.entries->counts; i++)
-			free(info->loader.entries->entrie[i].file_name);
-
-		free(info->loader.entries->entrie);
-		free(info->loader.entries);
+		free_ld_entrs(info->loader.entries);
 	}
-free_info:
+
 	free(info);
 
 }
