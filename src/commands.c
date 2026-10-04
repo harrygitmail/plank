@@ -472,7 +472,7 @@ out:
 
 int show_entrie(int argc, char **argv)
 {
-	int status;
+	int status = 0;
 	struct loader_entries *entries = NULL;
 	char *path_to_boot = NULL;
 	char *entry_token = NULL;
@@ -526,6 +526,7 @@ int show_entrie(int argc, char **argv)
 		}
 
 		struct loader_entry_w *entrie = NULL;
+		entrie = parse_entry(file, path_to_file);
 		if (entrie == NULL) {
 			ret = PLANK_ERR;
 			goto exit;
@@ -534,7 +535,7 @@ int show_entrie(int argc, char **argv)
 		fclose(file);
 
 		free(path_to_file);
-
+		printf("     filename: %s\n", entrie->filename);
 		printf("        title: %s\n", entrie->title);
 		printf("      version: %s\n", entrie->version);
 		printf("   machine-id: %s\n", entrie->machine_id);
