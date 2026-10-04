@@ -65,11 +65,32 @@ struct loader_entries_w {
 typedef enum {
 	ENTRY_OK,
 	ENTRY_DELETE_PENDING,
+	ENTRY_MAKE_PENDING,
+	ENTRY_EXIST_BOOT,
 } entry_status;
 
+/**
+ * @free:- sometimes we need to free some of field of 'loader_entry'
+ * 	   sometimes we dont because we were referenced. in such
+ * 	   sitution @free will hold bit field indicating which require to
+ * 	   be free.
+ */
+
+#define FREE_FL_NAME		(1 << 0)
+#define FREE_ENTRTOK		(1 << 1)
+#define FREE_ID                 (1 << 2)
+#define FREE_PRETYNA		(1 << 3)
+#define FREE_KERN		(1 << 4)
+#define FREE_SNAP		(1 << 5)
+#define FREE_SURUUID		(1 << 6)
 struct loader_entry {
 
 	char *file_name;
+	char *entry_token;
+	char *id;
+	char *pretty_name;
+	char *sur_uuid;
+	int free;
 	struct kernel_ver *kern;
 	struct snapshot_info *snap;
 	entry_status status;
