@@ -372,3 +372,111 @@ out:
 
 	return ret;
 }
+
+enum plank_status pre_entries(
+	struct system_info *sinfo,
+	struct loader_entries_w **entries_w)
+{
+	if (sinfo == NULL || entries_w == NULL)
+		return PLANK_MEM_ERR;
+
+	struct loader_entries *req_entries = NULL;
+	struct loader_entries_w *entries_w_req = NULL;
+	int ret = 0;
+
+	req_entries = entr_ks(&sinfo->system.kern, &sinfo->system.snap);
+	if (req_entries == NULL)
+		return PLANK_MEM_ERR;
+
+	ret = entr_give_file_name(req_entries, sinfo->system.eb.entry_token);
+	if (ret)
+		goto fail;
+
+	entr_up_p(
+		req_entries,
+		sinfo->os_release.pretty_name,
+		NULL,
+		P_PRETTY_NAME);
+
+	entr_up_p(
+		req_entries,
+		sinfo->os_release.id,
+		NULL,
+		P_ID);
+
+	entr_up_p(
+		req_entries,
+		sinfo->system.eb.entry_token,
+		NULL,
+		P_ENTR_TOKEN);
+
+	entr_up_p(
+		req_entries,
+		sinfo->system.mount_info.sur_uuid,
+		NULL,
+		P_SUR_UUID);
+
+	entr_mark(req_entries, ENTRY_MAKE_PENDING, NULL);
+	int fr = 0;
+	fr = (FREE_FL_NAME);
+	for (size_t i = 0; i < req_entries->counts; i++)
+		req_entries->entrie[i].free = fr;
+	/**
+	 * later code temporary zero out nanosec field. so lets save them first
+	 * so we can rewrite them back before exisitng funcation. please refer to
+	 * note written at end of 'str_to_time()' to know why it is require.
+	 */
+
+	time_t *nsecs = calloc(req_entries->counts, sizeof(time_t));
+	if (nsecs == NULL)
+		goto fail;
+
+	for (size_t i = 0; i < req_entries->counts; i++) {
+		nsecs[i] = req_entries->entrie[i].snap->snapshot_time.tv_nsec;
+		req_entries->entrie[i].snap->snapshot_time.tv_nsec = 0;
+	}
+
+	/**
+	 * if entry already exist that mark it as 'ENTRY_EXIST_BOOT'
+	 * so later function could avoid recreating them
+	 */
+	for (size_t i = 0; i < sinfo->loader.entries->counts; i++) {
+		for (size_t j = 0; j < req_entries->counts; j++) {
+			int eq = entr_is_equal(
+				&req_entries->entrie[j],
+				&sinfo->loader.entries->entrie[i],
+				ENTR_SNAP | ENTR_KERN);
+			if (eq)
+				req_entries->entrie[j].status = ENTRY_EXIST_BOOT;
+		}
+	}
+
+	for (size_t i = 0; i < req_entries->counts; i++)
+		req_entries->entrie[i].snap->snapshot_time.tv_nsec = nsecs[i];
+
+	free(nsecs);
+
+	entries_w_req = bring_ld_entrs_w(req_entries->counts);
+	if (!entries_w_req)
+		goto fail;
+
+	for (size_t i = 0; i < req_entries->counts; i++) {
+		ret = entr_to_entr_w(
+			&req_entries->entrie[i],
+			&entries_w_req->entrie[entries_w_req->curr]);
+		if (ret < 0)
+			goto fail;
+		if (!ret)
+			entries_w_req->curr++;
+	}
+
+	*entries_w = entries_w_req;
+
+	free_ld_entrs(req_entries);
+	return PLANK_OK;
+fail:
+	free_ld_entrs(req_entries);
+	free_ld_entrs_w(entries_w_req);
+	return PLANK_ERR;
+}
+

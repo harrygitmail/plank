@@ -11,3 +11,14 @@ struct loader_entries *list_loader_entries(const char *BOOT,
 
 enum plank_status pre_entrie(struct system_info *s_info,
 	struct loader_entry_w **entrie_out);
+
+/**
+ * pre_entries:- provide entries needed to be written from system info
+ * FIX ME: implementation is not done yet completely.
+ *
+ * NOTE:- 'pre_entries' assume proivded data by caller is efficent and
+ * 	  not corrupted in any mananer.
+ */
+enum plank_status pre_entries(
+	struct system_info *sinfo,
+	struct loader_entries_w **entries_w);

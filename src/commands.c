@@ -1,8 +1,12 @@
-#include "commands.h"
 #define _GNU_SOURCE 
 #include <stdio.h>
 #include <fcntl.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include "common.h"
+#include "commands.h"
+#include "entr.h"
 #include "kernel.h"
 #include "loader.h"
 #include "plank.h"
@@ -213,7 +217,7 @@ int make_entrie(int argc, char **argv)
 	int p = 0;
 	enum plank_status p_status;
 
-	p_status = pre_entrie(info, &host_loader);
+	p_status = pre_entries(info, &host_loader);
 	if (p_status != PLANK_OK) {
 		status = p_status;
 		goto out;
@@ -541,6 +545,7 @@ int show_entrie(int argc, char **argv)
 
 		printf("\n");
 
+		free(entrie->filename);
 		free(entrie->title);
 		free(entrie->version);
 		free(entrie->machine_id);
