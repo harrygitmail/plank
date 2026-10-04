@@ -69,6 +69,24 @@ typedef enum {
 	ENTRY_EXIST_BOOT,
 } entry_status;
 
+#define ENTRY_ID_SIZE		0x30
+
+/**
+ * @entry_id help identify entry and finding its internal info.
+ *
+ * @entry_id should follow following format
+ * 	[8 byte][8 byte][8 byte][8 byte][8 byte][8 byte]
+ *
+ * each 8 byte region identify internal data of entry in following order.
+ *
+ * 1 region: entry_token
+ * 2 region: id
+ * 3 region: prett_name
+ * 4 region: sur_uuid
+ * 5 region: kern
+ * 6 region: snap
+ */
+
 /**
  * @free:- sometimes we need to free some of field of 'loader_entry'
  * 	   sometimes we dont because we were referenced. in such
@@ -91,6 +109,7 @@ struct loader_entry {
 	char *pretty_name;
 	char *sur_uuid;
 	int free;
+	unsigned char entry_id[ENTRY_ID_SIZE];
 	struct kernel_ver *kern;
 	struct snapshot_info *snap;
 	entry_status status;
