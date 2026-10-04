@@ -1,8 +1,14 @@
 #include <ctype.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "types.h"
+#include "parse.h"
+
+static int parse_op_uuid(const char *op, char **ret);
+static int parse_op_subvolid(char *op, char **ret);
 
 static char **read_file(FILE *file)
 {
@@ -262,6 +268,235 @@ out:
 		free(lines[i]);
 
 	free(lines);
+
+	return ret;
+}
+
+int parse_option(const char *op, int target, char **ret)
+{
+	if (op == NULL || ret == NULL)
+		return -1;
+
+	/**
+	 * lets dont overwrite caller string
+	 */
+	int status = 0;
+	char *op_d = strdup(op);
+	if (op_d == NULL) {
+		perror("parse_option(strdup)");
+		status = -1;
+		goto fail;
+	}
+
+	switch (target) {
+	case OP_UUID:
+		status = parse_op_uuid(op_d, ret);
+		break;
+
+	case OP_SUBVOL_ID:
+		status = parse_op_subvolid(op_d, ret);
+		break;
+
+	default:
+		fprintf(stderr,
+			"parse_option: unknown '%d' target passed", target);
+		status = -1;
+	}
+
+	if (status)
+		goto fail;
+
+	free(op_d);
+	return status;
+fail:
+	fprintf(stderr,
+		"parse_option: failed to parse option\n");
+
+	free(op_d);
+	return status;
+}
+
+static int parse_op_uuid(const char *op, char **ret)
+{
+	char *uuid_str = strstr(op, "UUID=");
+	if (!uuid_str)
+		goto fail;
+
+	char *start = strchr(uuid_str, '=') + 1;
+	char *uuid = malloc(sizeof(char) * 37);
+	if (!uuid)
+		goto fail;
+
+	strncpy(uuid, start, 36);
+	*ret = uuid;
+
+	return 0;
+fail:
+	fprintf(stderr, "parse_op_uuid: failed to parse uuid\n");
+	fprintf(stderr, "parse_op_uuid: following string passed: %s\n", op);
+	return -1;
+}
+
+static int parse_op_subvolid(char *op, char **ret)
+{
+	char *subvolid_str = strstr(op, "subvolid=");
+	if (!subvolid_str)
+		goto fail;
+
+	char *start = subvolid_str+ strlen("subvolid");
+
+	char *end = strchr(start, ' ');
+	if (!end)
+		goto fail;
+
+	*end = '\0';
+	size_t len = strlen(start) + 1;
+
+	char *subvolid = malloc(sizeof(char) * len);
+	if (!subvolid)
+		goto fail;
+
+	strncpy(subvolid, start, len);
+
+	*ret = subvolid;
+	return 0;
+fail:
+	fprintf(stderr, "parse_op_subvolid: failed to parse subvolid\n");
+	fprintf(stderr, "parse_op_subvolid: following string passed: %s\n", op);
+	return -1;
+}
+
+int parse_title(const char *title, int target, char **ret)
+{
+	char *pretty_name = NULL;
+	char *time_str = NULL;
+	char *kern_ver_str = NULL;
+	char *dup_title = NULL;
+	char *ret_str = NULL;
+
+	if (title == NULL || ret == NULL)
+		goto inval;
+
+	dup_title = strdup(title);
+	if (!dup_title)
+		goto strdup_fail;
+	/**
+	 * first call will just point 'snapshot' whcih we
+	 * really dont want to save
+	 */
+	strtok(dup_title, " ");
+
+	pretty_name = strtok(NULL, " ");
+	time_str = strtok(NULL, " ");
+	/**
+	 * 'jn' will point to next part of same time string.
+	 * it assume time is written like this.
+	 * 	2026-08-02 00:05:17
+	 * above call may have turn that spcae into NULL byte
+	 * so after having pointer to nexk token, in this case
+	 * its '00:05:17'. then we can turn that NULL byte into
+	 * space again.
+	 */
+	char *jn = strtok(NULL, " ");
+	*(jn - 1) = ' ';
+
+	kern_ver_str = strtok(NULL, " ");
+
+	switch (target) {
+	case TITLE_PRETTY_NAME:
+		ret_str = strdup(pretty_name);
+		break;
+
+	case TITLE_KERN_VER:
+		ret_str = strdup(kern_ver_str);
+		break;
+
+	case TITLE_SNAP_TIME:
+		ret_str = strdup(time_str);
+		break;
+
+	default:
+		goto un_tar;
+	}
+	if (!ret_str)
+		goto strdup_fail;
+
+	*ret = ret_str;
+
+	free(dup_title);
+	return 0;
+
+un_tar:
+	fprintf(stderr,
+		"parse_title: unknown target '%d' passed\n", target);
+	goto fail;
+inval:
+	fprintf(stderr,
+		"parse_title: invalid argument passed(null pointer)\n");
+	goto fail;
+
+strdup_fail:
+	perror("parse_title(strdup)");
+	goto fail;
+
+fail:
+	fprintf(stderr,
+		"parse_title: failed to parse title\n");
+	free(dup_title);
+	return -1;
+}
+/**
+ * FIX ME: 'parse_id_skey' require review and refactor as it
+ * 	   for now use pointer arthemetic to find size of id.
+ *
+ * prase id from sort-key string
+ */
+int parse_id_skey(char **ret_str, const char *sort_key)
+{
+	char *id = NULL;
+	char *end = NULL;
+	size_t len = 0;
+
+	end = strchr(sort_key, '-');
+
+	len = end - sort_key;
+
+	id = malloc(sizeof(char) * len);
+	if (!id)
+		return -1;
+
+	strncpy(id, sort_key, len);
+
+	*ret_str = id;
+	return 0;
+}
+/**
+ * example string str-> "/home/harry/file.c"
+ */
+const char *bsname(const char *path)
+{
+	const char *ret = NULL;
+	char *slash = NULL;
+
+keep_finding:
+	for (;;) {
+		if (*path == '/')
+			break;
+		if (*path == '\0')
+			goto got_it;
+
+		path++;
+	}
+
+	slash = (char *) path;
+
+	if (*path != '\0') {
+		path++;
+		goto keep_finding;
+	} else {
+got_it:
+		ret = slash + 1;
+	}
 
 	return ret;
 }
