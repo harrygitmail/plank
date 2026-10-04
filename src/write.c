@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-enum plank_status write_entrie(const struct loader_entrie_w *entrie,
+enum plank_status write_entrie(const struct loader_entry_w *entrie,
 	FILE *steam)
 {
 	enum plank_status ret = PLANK_OK;
@@ -38,7 +38,6 @@ enum plank_status write_entrie(const struct loader_entrie_w *entrie,
 
 fail:
 	ret = PLANK_ERR;
-
 out:
 
 	return ret;

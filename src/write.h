@@ -4,5 +4,5 @@
 
 
 enum plank_status write_entrie(
-	const struct loader_entrie_w *entrie,
+	const struct loader_entry_w *entrie,
 	FILE *steam);
