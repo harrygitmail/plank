@@ -143,6 +143,10 @@ struct loader_entries *list_loader_entries(const char *BOOT,
 		if (ret)
 			goto fail;
 
+		ret = entr_give_id(&entries->entrie[i]);
+		if (ret)
+			goto fail;
+
 		entries->counts++;
 	}
 
@@ -382,15 +386,19 @@ enum plank_status pre_entries(
 
 	struct loader_entries *req_entries = NULL;
 	struct loader_entries_w *entries_w_req = NULL;
+	time_t *nsecs = NULL;
 	int ret = 0;
+	enum plank_status pret = PLANK_OK;
 
 	req_entries = entr_ks(&sinfo->system.kern, &sinfo->system.snap);
 	if (req_entries == NULL)
 		return PLANK_MEM_ERR;
 
 	ret = entr_give_file_name(req_entries, sinfo->system.eb.entry_token);
-	if (ret)
+	if (ret) {
+		pret = PLANK_ENTR_FAIL;
 		goto fail;
+	}
 
 	entr_up_p(
 		req_entries,
@@ -427,13 +435,20 @@ enum plank_status pre_entries(
 	 * note written at end of 'str_to_time()' to know why it is require.
 	 */
 
-	time_t *nsecs = calloc(req_entries->counts, sizeof(time_t));
-	if (nsecs == NULL)
+	nsecs = calloc(req_entries->counts, sizeof(time_t));
+	if (nsecs == NULL) {
+		pret = PLANK_MEM_ERR;
 		goto fail;
+	}
 
 	for (size_t i = 0; i < req_entries->counts; i++) {
 		nsecs[i] = req_entries->entrie[i].snap->snapshot_time.tv_nsec;
 		req_entries->entrie[i].snap->snapshot_time.tv_nsec = 0;
+		ret = entr_give_id(&req_entries->entrie[i]);
+		if (ret) {
+			pret = PLANK_ENTR_FAIL;
+			goto fail;
+		}
 	}
 
 	/**
@@ -457,15 +472,19 @@ enum plank_status pre_entries(
 	free(nsecs);
 
 	entries_w_req = bring_ld_entrs_w(req_entries->counts);
-	if (!entries_w_req)
+	if (!entries_w_req) {
+		pret = PLANK_MEM_ERR;
 		goto fail;
+	}
 
 	for (size_t i = 0; i < req_entries->counts; i++) {
 		ret = entr_to_entr_w(
 			&req_entries->entrie[i],
 			&entries_w_req->entrie[entries_w_req->curr]);
-		if (ret < 0)
+		if (ret < 0) {
+			pret = PLANK_ENTR_FAIL;
 			goto fail;
+		}
 		if (!ret)
 			entries_w_req->curr++;
 	}
@@ -473,10 +492,11 @@ enum plank_status pre_entries(
 	*entries_w = entries_w_req;
 
 	free_ld_entrs(req_entries);
-	return PLANK_OK;
+	return pret;
 fail:
+	free(nsecs);
 	free_ld_entrs(req_entries);
 	free_ld_entrs_w(entries_w_req);
-	return PLANK_ERR;
+	return pret;
 }
 

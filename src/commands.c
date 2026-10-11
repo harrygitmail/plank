@@ -218,7 +218,22 @@ int make_entrie(int argc, char **argv)
 	enum plank_status p_status;
 
 	p_status = pre_entries(info, &host_loader);
-	if (p_status != PLANK_OK) {
+	switch (p_status) {
+	case PLANK_MEM_ERR:
+		fprintf(stderr, "memory error!\n");
+		status = p_status;
+		goto out;
+
+	case PLANK_ENTR_FAIL:
+		fprintf(stderr, "operation on entry object failed\n");
+		status = p_status;
+		goto out;
+
+	case PLANK_OK:
+		break;
+
+	default:
+		fprintf(stderr, "unknown error (code: %d)\n", p_status);
 		status = p_status;
 		goto out;
 	}

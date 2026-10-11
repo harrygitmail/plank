@@ -119,7 +119,7 @@ static uint64_t fnv(const void *in, size_t size)
 		goto out;
 
 	for (size_t i = 0; i < size; i++)
-		ret = (ret << 5) & (ret >> 3) & p[i];
+		ret = ret * 31 + p[i];
 out:
 	return ret;
 }
@@ -815,12 +815,13 @@ fail:
 
 int entr_give_id(struct loader_entry *entr)
 {
+	if (entr == NULL)
+		return -1;
 	uint64_t segment = 0;
 	size_t offset = 0;
 
 	segment = fnv(entr->entry_token, sizeof(entr->entry_token));
 	memcpy(&entr->entry_id[offset], &segment, sizeof(uint64_t));
-
 	offset += sizeof(uint64_t);
 
 	segment = fnv(entr->id, sizeof(entr->id));
@@ -860,7 +861,6 @@ int entr_is_equal(
 {
 	if (entr1 == NULL || entr2 == NULL)
 		return -1;
-
 	size_t offset = 0;
 
 	if (what & ENTR_ENTRY_TOKEN)

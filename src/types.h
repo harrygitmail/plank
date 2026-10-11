@@ -19,6 +19,7 @@ enum plank_status {
 	PLANK_BOOT_NOT_FOUND,
 	PLANK_NO_ENTRY,
 	PLANK_PARM_ERR,
+	PLANK_ENTR_FAIL,
 };
 
 struct kernel_ver {

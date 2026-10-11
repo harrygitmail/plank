@@ -343,7 +343,7 @@ static int parse_op_subvolid(char *op, char **ret)
 	if (!subvolid_str)
 		goto fail;
 
-	char *start = subvolid_str+ strlen("subvolid");
+	char *start = subvolid_str + strlen("subvolid=");
 
 	char *end = strchr(start, ' ');
 	if (!end)
