@@ -24,3 +24,5 @@ int check(int argc, char **argv);
 int ls_subvol(int argc, char **argv);
 
 int blob(int argc, char **argv);
+
+int copy(int argc, char **argv);
