@@ -71,7 +71,7 @@ enum plank_status get_snap_ls(
 		goto out;
 	}
 
-	ret->list = malloc(sizeof(struct snapshot_info) * capacity);
+	ret->list = calloc(capacity, sizeof(struct snapshot_info));
 	if (ret->list == NULL) {
 		p_ret = PLANK_MEM_ERR;
 		goto out;
@@ -106,6 +106,16 @@ enum plank_status get_snap_ls(
 			}
 
 			ret->list = temp;
+
+			size_t cap_init = 0;
+			size_t mem_init = 0;
+
+			cap_init = new_capacity - capacity;
+			mem_init = sizeof(struct snapshot_info) * cap_init;
+
+			memset(&ret->list[capacity],
+				0,
+				mem_init);
 			capacity = new_capacity;
 		}
 
@@ -181,29 +191,39 @@ enum plank_status get_subvol_list(struct subvol_list *ret, int fd)
 	size_t capacity = 6;
 	size_t n = 0;
 
-	ret->subvols = malloc(sizeof(struct subvol_info) * capacity);
+	ret->subvols = calloc(capacity, sizeof(struct subvol_info));
 	if (ret->subvols == NULL) {
 		p_ret = PLANK_MEM_ERR;
 		goto out;
 	}
 
 	errno = 0;
-	while((b_ret = btrfs_util_subvolume_iter_next_info(
+	while ((b_ret = btrfs_util_subvolume_iter_next_info(
 		subvol_iter,
 		&path,
 		&subvol_info)) == BTRFS_UTIL_OK) {
 
-		if(capacity < n + 1) {
+		if (capacity < n + 1) {
 
 			size_t new_capacity = capacity * 2;
 
 			struct subvol_info *temp = realloc(
 				ret->subvols,
 				sizeof(struct subvol_info) * new_capacity);
-
-			if(temp == NULL) return PLANK_MEM_ERR;
+			if (temp == NULL) return PLANK_MEM_ERR;
 
 			ret->subvols = temp;
+
+			size_t cap_to_init = 0;
+			size_t mem_init = 0;
+
+			cap_to_init = new_capacity - capacity;
+			mem_init = sizeof(struct subvol_info) * cap_to_init;
+
+			memset(&ret->subvols[capacity],
+				0,
+				mem_init);
+
 			capacity = new_capacity;
 		}
 		ret->subvols[n].id = subvol_info.id;

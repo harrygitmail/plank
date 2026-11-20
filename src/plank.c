@@ -96,7 +96,6 @@ eb:
 			ret = PLANK_ERR;
 			goto out;
 		}
-
 	}
 out:
 	ret_info->system.eb.entry_token = entry_token;

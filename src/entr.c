@@ -784,7 +784,7 @@ int entr_w_to_entr(
 	if (ret)
 		goto fail;
 
-	kern = malloc(sizeof(struct kernel_ver));
+	kern = calloc(1, sizeof(struct kernel_ver));
 	if (!kern)
 		goto fail;
 
@@ -798,7 +798,7 @@ int entr_w_to_entr(
 	if (ret)
 		goto fail;
 
-	snap = malloc(sizeof(struct snapshot_info));
+	snap = calloc(1, sizeof(struct snapshot_info));
 	if (!snap)
 		goto fail;
 
