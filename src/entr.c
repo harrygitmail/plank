@@ -458,72 +458,116 @@ fail:
 		"time_to_str: failed to constructe string from time\n");
 	return -1;
 }
+/**
+ * assuming filename will be passed to 'str_to_time' for format of filename
+ * referer to comment below 'str_to_time' function
+ */
 
 static int str_to_time(struct timespec *time, const char *str)
 {
+	char *dup_str = NULL;
 	if (time == NULL || str == NULL)
 		goto inval;
 
-	struct tm tm;
 	struct timespec str_time;
 
-	char *leftof = strptime(str, entr_time_format, &tm);
-	if (!leftof)
-		goto strptime_fail;
-
-	if (*leftof != '\0') {
-		/**
-		 * if 'leftof' do not point to null byte than input
-		 * string probably have more charcter than fomrat we
-		 * are using (see entr.h) lets just log it and continue
-		 */
-
-		fprintf(stdout,
-			"str_to_time: "
-			"given string contain for charcter than expected\n"
-			"str_to_time: "
-			"it is not error you can ignore it unless loader "
-			"entry have issue\n");
-	}
-
-	unsigned char wday[sizeof(tm.tm_wday)];
-
-	memcpy(&wday, &tm.tm_wday, sizeof(tm.tm_wday));
-	tm.tm_wday = -1;
-	str_time.tv_sec = mktime(&tm);
-
-	if (tm.tm_wday == -1)
+	dup_str = strdup(str);
+	if (!dup_str)
 		goto fail;
 
-	memcpy(&tm.tm_mday, &wday, sizeof(tm.tm_mday));
+	char *nano_sec_end = strrchr(dup_str, '.');
+	if (!nano_sec_end)
+		goto inval_str;
 
-	/**
-	 * NOTE:- nanosecounds are lost. caller should keep it in mind
-	 * 	  string to time conservation may have different time
-	 * 	  than actual subvolume creation time. it is recommanded
-	 * 	  to use subvolume id to get more accurate time of subvolume
-	 * 	  creation or you can use this time still if only 'tv_sec' is
-	 * 	  what you mostly care about
-	 */
+	*nano_sec_end = '\0';
+
+	char *sec_end = strrchr(dup_str, '-');
+	if (!sec_end)
+		goto inval_str;
+
+	*sec_end = '\0';
+
+	char *nano_sec_start = sec_end + 1;
+
+	char *sec_start = strrchr(dup_str, '-') + 1;
+
+	long sec = 0;
+	long nsec = 0;
+
+	char *endptr = NULL;
+
+	sec = strtol(sec_start, &endptr, 10);
+	if (endptr == sec_start) {
+		fprintf(stderr,
+			"str_to_time: sec field in filename is invalid\n");
+		fprintf(stderr,
+			"str_to_time: invalid field = \"%s\"\n", sec_start);
+		goto inval_str;
+	}
+
+	if (*endptr != '\0') {
+		fprintf(stderr,
+			"str_to_time: "
+			"sec filed in filename have invalid charcter\n");
+		fprintf(stderr,
+			"str_to_time: "
+			"invalid part = \"%s\" valid part = %ld\n", endptr, sec);
+		fprintf(stderr,
+			"str_to_time: "
+			"continue program for now please check output\n");
+	}
+
+	str_time.tv_sec = sec;
+
+	endptr = NULL;
+	nsec = strtol(nano_sec_start, &endptr, 10);
+	if (endptr == nano_sec_start) {
+		fprintf(stderr,
+			"str_to_time: "
+			"nsec field in filename is invalid\n");
+		fprintf(stderr,
+			"str_to_time: "
+			"invalid field = \"%s\"\n", nano_sec_start);
+		goto inval_str;
+	}
+
+	if (*endptr != '\0') {
+		fprintf(stderr,
+			"str_to_time: "
+			"sec filed in filename have invalid charcter\n");
+		fprintf(stderr,
+			"str_to_time: "
+			"invalid part = \"%s\" valid part = %ld\n", endptr, nsec);
+		fprintf(stderr,
+			"str_to_time: "
+			"continue program for now please check output\n");
+	}
+
+	str_time.tv_nsec = nsec;
+
+	free(dup_str);
 	*time = str_time;
 	return 0;
 
-strptime_fail:
+inval_str:
+	fprintf(stderr, "str_to_time: invalid string passed\n");
 	fprintf(stderr,
-		"str_to_time: failed to parse all format in given string\n");
-	fprintf(stderr, "str_to_time: following string passed: %s\n", str);
-	fprintf(stderr,
-		"str_to_time: format used by 'plank': %s\n", entr_time_format);
+		"str_to_time: "
+		"expected str format = "
+		"\"snapshot-MACHINE_ID-KERN_VER-SNAP_SEC_TIME-SNAP_NSEC_TIME.conf\"\n");
+	fprintf(stderr, "str_to_time: passed str = \"%s\" \n", str);
 	goto fail;
 inval:
 	fprintf(stderr, "str_to_time: invalid argument passed (null pointer)\n");
 fail:
+	free(dup_str);
 	fprintf(stderr, "str_to_time: failed to turn string into time\n");
 	return -1;
 }
 /**
  * for now using following filename format.
- * file name format: snapshot-ENTRY_TOKEN-KERN_VER-SNAP_TIME.conf
+ * file name format:
+ * 	snapshot-ENTRY_TOKEN-KERN_VER-SNAP_TIME_SEC-SNAP_TIME_NSEC.conf
  *
  */
 
@@ -541,10 +585,11 @@ static int file_name(
 
 	cnt = asprintf(
 		&ret_str,
-		"snapshot-%s-%s-%ld.conf",
+		"snapshot-%s-%s-%ld-%ld.conf",
 		entrie_token,
 		kver->kernel_ver,
-		snap->snapshot_time.tv_sec);
+		snap->snapshot_time.tv_sec,
+		snap->snapshot_time.tv_nsec);
 	if (cnt < 0) {
 		perror("entr_file_name");
 		goto fail;
@@ -715,7 +760,6 @@ int entr_w_to_entr(
 	char *kern_str = NULL;
 	char *file_name = NULL;
 	char *subvolid = NULL;
-	char *subvoltime = NULL;
 	char *id = NULL;
 
 	struct kernel_ver *kern = NULL;
@@ -758,14 +802,10 @@ int entr_w_to_entr(
 	if (!snap)
 		goto fail;
 
-	ret = parse_title(entr_w->title, TITLE_SNAP_TIME, &subvoltime);
-	if (ret)
-		goto fail;
-
 	subvolid_l = strtol(subvolid, NULL, 10);
 	snap->snapshot_id = (uint64_t) subvolid_l;
 
-	ret = str_to_time(&snap->snapshot_time, subvoltime);
+	ret = str_to_time(&snap->snapshot_time, entr_w->filename);
 	if (ret)
 		goto fail;
 
@@ -795,7 +835,6 @@ int entr_w_to_entr(
 
 	free(kern_str);
 	free(subvolid);
-	free(subvoltime);
 	return 0;
 fail:
 	free(pretty_name);
@@ -806,7 +845,6 @@ fail:
 	free(kern_str);
 	free(file_name);
 	free(subvolid);
-	free(subvoltime);
 	free(id);
 	fprintf(stderr,
 		"entr_w_to_entr: failed to create object 'loader_entrie'\n");

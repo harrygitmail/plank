@@ -373,7 +373,6 @@ enum plank_status pre_entrie(struct system_info *s_info,
 
 	}
 out:
-
 	return ret;
 }
 
@@ -386,7 +385,6 @@ enum plank_status pre_entries(
 
 	struct loader_entries *req_entries = NULL;
 	struct loader_entries_w *entries_w_req = NULL;
-	time_t *nsecs = NULL;
 	int ret = 0;
 	enum plank_status pret = PLANK_OK;
 
@@ -429,21 +427,8 @@ enum plank_status pre_entries(
 	fr = (FREE_FL_NAME);
 	for (size_t i = 0; i < req_entries->counts; i++)
 		req_entries->entrie[i].free = fr;
-	/**
-	 * later code temporary zero out nanosec field. so lets save them first
-	 * so we can rewrite them back before exisitng funcation. please refer to
-	 * note written at end of 'str_to_time()' to know why it is require.
-	 */
-
-	nsecs = calloc(req_entries->counts, sizeof(time_t));
-	if (nsecs == NULL) {
-		pret = PLANK_MEM_ERR;
-		goto fail;
-	}
 
 	for (size_t i = 0; i < req_entries->counts; i++) {
-		nsecs[i] = req_entries->entrie[i].snap->snapshot_time.tv_nsec;
-		req_entries->entrie[i].snap->snapshot_time.tv_nsec = 0;
 		ret = entr_give_id(&req_entries->entrie[i]);
 		if (ret) {
 			pret = PLANK_ENTR_FAIL;
@@ -465,11 +450,6 @@ enum plank_status pre_entries(
 				req_entries->entrie[j].status = ENTRY_EXIST_BOOT;
 		}
 	}
-
-	for (size_t i = 0; i < req_entries->counts; i++)
-		req_entries->entrie[i].snap->snapshot_time.tv_nsec = nsecs[i];
-
-	free(nsecs);
 
 	entries_w_req = bring_ld_entrs_w(req_entries->counts);
 	if (!entries_w_req) {
@@ -494,7 +474,6 @@ enum plank_status pre_entries(
 	free_ld_entrs(req_entries);
 	return pret;
 fail:
-	free(nsecs);
 	free_ld_entrs(req_entries);
 	free_ld_entrs_w(entries_w_req);
 	return pret;
