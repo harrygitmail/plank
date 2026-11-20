@@ -355,17 +355,22 @@ get_kern_list:
 		goto out;
 
 	entries = list_loader_entries(boot_path, entry_token);
+	if (entries == NULL) {
+		ret = PLANK_ERR;
+		goto out;
+	}
+	if (entries->status != 0) {
+		printf("failed to get loader entrie list\n");
+		ret = entries->status;
+		goto out;
+	}
+
 	if (entries->counts == 0) {
 		printf("No loader entrie to remove\n");
 		ret = 0;
 		goto out;
 	}
 
-	if (entries->status != 0) {
-		printf("failed to get loader entrie list\n");
-		ret = entries->status;
-		goto out;
-	}
 
 	link_loader_entries(&host, &tar_subvol_snap_info, entries);
 
