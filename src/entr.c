@@ -688,7 +688,7 @@ int entr_to_entr_w(
 
 	len = asprintf(
 		&path_to_kern,
-		"%s/%s/linux",
+		"/%s/%s/linux",
 		entr->entry_token,
 		entr->kern->kernel_ver);
 	if (len < 0)
@@ -696,7 +696,7 @@ int entr_to_entr_w(
 
 	len = asprintf(
 		&path_to_initd,
-		"%s/%s/initrd",
+		"/%s/%s/initrd",
 		entr->entry_token,
 		entr->kern->kernel_ver);
 	if (len < 0)
