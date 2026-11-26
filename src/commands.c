@@ -371,8 +371,7 @@ get_kern_list:
 		goto out;
 	}
 
-
-	link_loader_entries(&host, &tar_subvol_snap_info, entries);
+	loader_mark_entr_to_del(entries, &host, &tar_subvol_snap_info);
 
 	list_to_delete = malloc(sizeof(char *) * entries->counts);
 

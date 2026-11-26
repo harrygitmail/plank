@@ -22,3 +22,8 @@ enum plank_status pre_entrie(struct system_info *s_info,
 enum plank_status pre_entries(
 	struct system_info *sinfo,
 	struct loader_entries_w **entries_w);
+
+void loader_mark_entr_to_del(
+	struct loader_entries *entrs,
+	struct kernel_list *kl,
+	struct snapshot_list *sl);
