@@ -479,3 +479,38 @@ fail:
 	return pret;
 }
 
+void loader_mark_entr_to_del(
+	struct loader_entries *entrs,
+	struct kernel_list *kl,
+	struct snapshot_list *sl)
+{
+	for (size_t i = 0; i < entrs->counts; i++) {
+		struct loader_entry *entr = &entrs->entrie[i];
+		int kern_found = 0;
+		for (size_t j = 0; j < kl->counts; j++) {
+			if (memcmp(entr->kern, &kl->list[j], sizeof(struct kernel_ver)) != 0)
+				continue;
+
+			kern_found = 1;
+			break;
+		}
+
+		if (!kern_found) {
+			entr->status = ENTRY_DELETE_PENDING;
+			continue;
+		}
+
+		int snap_found = 0;
+
+		for (size_t k = 0; k < sl->counts; k++) {
+			if (memcmp(entr->snap, &sl->list[k], sizeof(struct snapshot_info)) != 0)
+				continue;
+
+			snap_found = 1;
+			break;
+		}
+
+		if (!snap_found)
+			entr->status = ENTRY_DELETE_PENDING;
+	}
+}
